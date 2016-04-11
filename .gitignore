@@ -13,4 +13,7 @@ bin/
 .gradle
 .classpath
 .settings/
-
+.idea/
+local.properties
+*.iml
+build/outputs/

@@ -76,7 +76,7 @@ public class TestDDPUsers extends TestCase {
         // make sure user doesn't exist
         Map<String, Object> userColl = obs.mCollections.get("users");
         assertNotNull(userColl);
-        boolean foundUser = false;
+        boolean foundUser;
         for (Entry<String, Object> entry : userColl.entrySet()) {
             Map<String, Object> fields = (Map<String, Object>) entry.getValue();
             ArrayList<Map<String,Object>> emails = (ArrayList<Map<String, Object>>) fields.get("emails");

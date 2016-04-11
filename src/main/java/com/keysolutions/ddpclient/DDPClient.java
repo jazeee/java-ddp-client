@@ -101,7 +101,7 @@ public class DDPClient extends Observable {
         Disconnected,
         Connected,
         Closed,
-    };
+    }
     private CONNSTATE mConnState;
     /** current command ID */
     private int mCurrentId;
@@ -236,8 +236,7 @@ public class DDPClient extends Observable {
             try {
                 // set up trustkeystore w/ Java's default trusted 
                 TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                KeyStore trustKeystore = null;
-                trustManagerFactory.init(trustKeystore);
+                trustManagerFactory.init((KeyStore)null);
                 trustManagers = trustManagerFactory.getTrustManagers();
             } catch (KeyStoreException e) {
                 log.warn("Error accessing Java default cacerts keystore {}", e);
@@ -274,13 +273,11 @@ public class DDPClient extends Observable {
 
     /**
      * initializes WS client's trust managers
-     * @param trustManagers
      */
     private void initWsClientSSL() {
         if (mTrustManagers != null) {
             try {
-                SSLContext sslContext = null;
-                sslContext = SSLContext.getInstance( "TLS" );
+                SSLContext sslContext = SSLContext.getInstance( "TLS" );
                 sslContext.init(null, mTrustManagers, null);
                 // now we can set the web service client to use this SSL context
                 mWsClient.setWebSocketFactory( new DefaultSSLWebSocketClientFactory( sslContext ) );
@@ -371,14 +368,13 @@ public class DDPClient extends Observable {
         String errorMsg = "{\"msg\":\"error\",\"source\":\"WebSocketClient\",\"errormsg\":\""
                 + errmsg + "\"}";
         log.debug("{}", errorMsg);
-        // ex.printStackTrace();
         received(errorMsg);
     }
 
     /**
      * Increments and returns the client's current ID
      * 
-     * @note increment/decrement/set on int (but not long) are atomic on the JVM
+     * Note: increment/decrement/set on int (but not long) are atomic on the JVM
      * @return integer DDP call ID
      */
     private int nextId() {
@@ -388,7 +384,7 @@ public class DDPClient extends Observable {
     /**
      * Registers a client DDP command results callback listener
      * 
-     * @param DDP command results callback
+     * @param resultListener command results callback
      * @return ID for next command
      */
     private int addCommmand(DDPListener resultListener) {
@@ -444,10 +440,7 @@ public class DDPClient extends Observable {
         callMsg.put(DdpMessageField.METHOD, method);
         callMsg.put(DdpMessageField.PARAMS, params);
 
-        int id = addCommmand(resultListener/*
-                                            * "method,"+method+","+Arrays.toString
-                                            * (params)
-                                            */);
+        int id = addCommmand(resultListener);
         callMsg.put(DdpMessageField.ID, Integer.toString(id));
         send(callMsg);
         return id;
@@ -479,10 +472,7 @@ public class DDPClient extends Observable {
         subMsg.put(DdpMessageField.NAME, name);
         subMsg.put(DdpMessageField.PARAMS, params);
 
-        int id = addCommmand(resultListener/*
-                                            * "sub,"+name+","+Arrays.toString(params
-                                            * )
-                                            */);
+        int id = addCommmand(resultListener);
         subMsg.put(DdpMessageField.ID, Integer.toString(id));
         send(subMsg);
         return id;
@@ -505,14 +495,14 @@ public class DDPClient extends Observable {
      * @param name name of the corresponding Meteor subscription
      * @param resultListener DDP command listener for this call
      * @return ID for next command
+     * @deprecated use #unsubscribe(int subId) instead
      */
     public int unsubscribe(String name, DDPListener resultListener) {
         Map<String, Object> unsubMsg = new HashMap<String, Object>();
         unsubMsg.put(DdpMessageField.MSG, DdpMessageType.UNSUB);
         unsubMsg.put(DdpMessageField.NAME, name);
 
-        int id = addCommmand(resultListener/* "unsub,"+name */);
-        unsubMsg.put(DdpMessageField.ID, Integer.toString(id));
+        int id = addCommmand(resultListener);
         send(unsubMsg);
         return id;
     }
@@ -522,9 +512,35 @@ public class DDPClient extends Observable {
      * 
      * @param name name of the corresponding Meteor subscription
      * @return ID for next command
+     * @deprecated use #unsubscribe(int subId) instead
      */
     public int unsubscribe(String name) {
         return unsubscribe(name, null);
+    }
+
+    /**
+     * If you have the subscription ID instead of the name, you can use this to unsubscribe
+     * @param subId subscription ID from when you subscribed
+     * @param resultListener result listener
+     * @return ID for next command
+     */
+    public int unsubscribe(int subId, DDPListener resultListener) {
+        Map<String, Object> unsubMsg = new HashMap<String, Object>();
+        unsubMsg.put(DdpMessageField.MSG, DdpMessageType.UNSUB);
+        unsubMsg.put(DdpMessageField.ID, Integer.toString(subId));
+
+        int id = addCommmand(resultListener);
+        send(unsubMsg);
+        return id;
+    }
+
+    /**
+     * If you have the subscription ID instead of the name, you can use this to unsubscribe
+     * @param subId subscription ID from when you subscribed
+     * @return ID for next command
+     */
+    public int unsubscribe(int subId) {
+        return unsubscribe(subId, null);
     }
 
     /**
@@ -635,7 +651,7 @@ public class DDPClient extends Observable {
      */
     public void send(Map<String, Object> msgParams) {
         String json = mGson.toJson(msgParams);
-        /*System.out.println*/log.debug("Sending {}", json);
+        log.debug("Sending {}", json);
         try {
         this.mWsClient.send(json);
         } catch (WebsocketNotConnectedException ex) {
@@ -652,17 +668,15 @@ public class DDPClient extends Observable {
      */
     @SuppressWarnings("unchecked")
     public void received(String msg) {
-         /*System.out.println*/log.debug("Received response: {}", msg);
+        log.debug("Received response: {}", msg);
         this.setChanged();
         // generic object deserialization is from
         // http://programmerbruce.blogspot.com/2011/06/gson-v-jackson.html
-        Map<String, Object> jsonFields = mGson.fromJson((String) msg,
-                HashMap.class);
-        this.notifyObservers(jsonFields);
+        Map<String, Object> jsonFields = mGson.fromJson(msg, HashMap.class);
 
         // notify any command listeners if we get updated or result msgs
         String msgtype = (String) jsonFields
-                .get(DdpMessageField.MSG.toString());
+                .get(DdpMessageField.MSG);
         if (msgtype == null) {
             // ignore {"server_id":"GqrKrbcSeDfTYDkzQ"} web socket msgs
             return;
@@ -671,7 +685,7 @@ public class DDPClient extends Observable {
             ArrayList<String> methodIds = (ArrayList<String>) jsonFields
                     .get(DdpMessageField.METHODS);
             for (String methodId : methodIds) {
-                DDPListener listener = (DDPListener) mMsgListeners.get(methodId);
+                DDPListener listener = mMsgListeners.get(methodId);
                 if (listener != null) {
                     listener.onUpdated(methodId);
                 }
@@ -680,25 +694,27 @@ public class DDPClient extends Observable {
             ArrayList<String> methodIds = (ArrayList<String>) jsonFields
                     .get(DdpMessageField.SUBS);
             for (String methodId : methodIds) {
-                DDPListener listener = (DDPListener) mMsgListeners.get(methodId);
+                DDPListener listener = mMsgListeners.get(methodId);
                 if (listener != null) {
                     listener.onReady(methodId);
                 }
             }
         } else if (msgtype.equals(DdpMessageType.NOSUB)) {
-            String msgId = (String) jsonFields.get(DdpMessageField.ID
-                    .toString());
-            DDPListener listener = (DDPListener) mMsgListeners.get(msgId);
-            if (listener != null) {
-                listener.onNoSub(msgId, (Map<String, Object>) jsonFields
-                        .get(DdpMessageField.ERROR));
-                mMsgListeners.remove(msgId);
+            String msgId = (String) jsonFields.get(DdpMessageField.ID);
+            if (msgId == null) {
+                log.warn("No such subscription ID found!");
+            } else {
+                DDPListener listener = mMsgListeners.get(msgId);
+                if (listener != null) {
+                    listener.onNoSub(msgId, (Map<String, Object>) jsonFields
+                            .get(DdpMessageField.ERROR));
+                    mMsgListeners.remove(msgId);
+                }
             }
         } else if (msgtype.equals(DdpMessageType.RESULT)) {
-            String msgId = (String) jsonFields.get(DdpMessageField.ID
-                    .toString());
+            String msgId = (String) jsonFields.get(DdpMessageField.ID);
             if (msgId != null) {
-                DDPListener listener = (DDPListener) mMsgListeners.get(msgId);
+                DDPListener listener = mMsgListeners.get(msgId);
                 if (listener != null) {
                     listener.onResult(jsonFields);
                     mMsgListeners.remove(msgId);
@@ -709,8 +725,7 @@ public class DDPClient extends Observable {
         } else if (msgtype.equals(DdpMessageType.CLOSED)) {
             mConnState = CONNSTATE.Closed;
         } else if (msgtype.equals(DdpMessageType.PING)) {
-            String pingId = (String) jsonFields.get(DdpMessageField.ID
-                    .toString());
+            String pingId = (String) jsonFields.get(DdpMessageField.ID);
             // automatically send PONG command back to server
             Map<String, Object> pongMsg = new HashMap<String, Object>();
             pongMsg.put(DdpMessageField.MSG, DdpMessageType.PONG);
@@ -719,15 +734,16 @@ public class DDPClient extends Observable {
             }
             send(pongMsg);
         } else if (msgtype.equals(DdpMessageType.PONG)) {
-            String pingId = (String) jsonFields.get(DdpMessageField.ID
-                    .toString());
+            String pingId = (String) jsonFields.get(DdpMessageField.ID);
             // let listeners know a Pong happened
-            DDPListener listener = (DDPListener) mMsgListeners.get(pingId);
+            DDPListener listener = mMsgListeners.get(pingId);
             if (listener != null) {
                 listener.onPong(pingId);
                 mMsgListeners.remove(pingId);
             }
         }
+
+        this.notifyObservers(jsonFields);
     }
 
     /**

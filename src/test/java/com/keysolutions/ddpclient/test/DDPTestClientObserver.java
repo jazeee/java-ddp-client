@@ -42,7 +42,7 @@ public class DDPTestClientObserver extends DDPListener implements Observer {
         Connected,
         LoggedIn,
         Closed,
-    };
+    }
     public DDPSTATE mDdpState;
     public String mResumeToken;
     public String mUserId;
@@ -154,7 +154,7 @@ public class DDPTestClientObserver extends DDPListener implements Observer {
 
     /**
      * Helper function to dump a map
-     * @param jsonFields
+     * @param jsonFields JSON field map to dump
      */
     public void dumpMap(Map<String, Object> jsonFields) {
         for (Entry<String, Object> entry : jsonFields.entrySet())  

@@ -103,13 +103,13 @@ public class TestDDPCollections {
     @Test
     public void testUnsubscribe() throws Exception {
         // test error handling for invalid subscription
-        mDdp.subscribe("testData", new Object[] {}, mObs);
+        int subId = mDdp.subscribe("testData", new Object[] {}, mObs);
         // wait a bit to get confirmation
         Thread.sleep(500);
         // make sure we see subscriptions
         assertTrue(mObs.mReadySubscription != null);
         // test unsubscribe
-        mDdp.unsubscribe("testData", mObs);
+        mDdp.unsubscribe(subId, mObs);
         // wait a bit to get confirmation
         Thread.sleep(500);
         // make sure we see unsubscription
@@ -152,7 +152,7 @@ public class TestDDPCollections {
         }
         // update first document
         Entry<String, Object> docEntry = coll.entrySet().iterator().next();
-        String docId = (String) docEntry.getKey();
+        String docId = docEntry.getKey();
         options.put("value", "test");
         options.put("id", docId);
         mDdp.call("updateDoc", methodArgs);
@@ -180,13 +180,11 @@ public class TestDDPCollections {
         // subscribe to TestCollection
         mDdp.subscribe("testData", new Object[]{});      
         // add a doc to collection
-        Object[] methodArgs = new Object[1];
         Map<String,Object> options = new HashMap<String,Object>();
         options.put("value", "a");
         options.put("docnum", 1);
         options.put("testfield", "test");
         options.put("userid", mObs.mUserId);
-        methodArgs[0] = options;
         // you need to specify the _id if you're creating doc on client
         options.put("_id", UUID.randomUUID().toString());
         mDdp.collectionInsert("TestCollection", options, mObs);
@@ -197,7 +195,7 @@ public class TestDDPCollections {
         // update document
         Map<String, Object> coll = mObs.mCollections.get("TestCollection");
         Entry<String, Object> docEntry = coll.entrySet().iterator().next();
-        String docId = (String) docEntry.getKey();
+        String docId = docEntry.getKey();
         // do RESTful API call to simulate client-side update
         options.clear();        
         Map<String,Object> setOptions = new HashMap<String,Object>();
@@ -235,13 +233,11 @@ public class TestDDPCollections {
         // subscribe to TestCollection
         mDdp.subscribe("testData", new Object[]{});      
         // add a doc to collection
-        Object[] methodArgs = new Object[1];
         Map<String,Object> options = new HashMap<String,Object>();
         options.put("value", "a");
         options.put("docnum", 1);
         options.put("testfield", "test");
         options.put("userid", mObs.mUserId);
-        methodArgs[0] = options;
         // you need to specify the _id if you're creating doc on client
         options.put("_id", UUID.randomUUID().toString());
         mDdp.collectionInsert("TestCollection", options, mObs);
@@ -252,7 +248,7 @@ public class TestDDPCollections {
         // check that field added on server comes down
         Map<String, Object> coll = mObs.mCollections.get("TestCollection");
         Entry<String, Object> docEntry = coll.entrySet().iterator().next();
-        String docId = (String) docEntry.getKey();
+        String docId = docEntry.getKey();
         Map<String, Object> doc = (Map<String, Object>) coll.get(docId);
         assertNull(doc.get("newField"));
         options.clear();

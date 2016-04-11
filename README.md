@@ -96,7 +96,7 @@ And in Maven, you can reference it with this:
     <dependency>
       <groupId>com.keysolutions</groupId>
       <artifactId>java-ddp-client</artifactId>
-      <version>1.0.0.1</version>
+      <version>1.0.0.4</version>
       <type>pom</type>
     </dependency>
 
@@ -112,6 +112,7 @@ library revision in the last digit (0.5.7.1, 0.5.7.2, etc.)
 * 1.0.0.1 - fix SSL support so it uses Java's default trusted CA certs
 * 1.0.0.2 - fix trustmanager SSL handling when reconnecting; added ability to pass in trustmanager; add reconnect unit test
 * 1.0.0.3 - update to Apache Commons 4; add custom Gson constructor
+* 1.0.0.4 - add unsubscribe by ID method to complement unsubscribe by name
 
 To-Do
 -----
