@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import com.keysolutions.ddpclient.DDPClient;
 import com.keysolutions.ddpclient.EmailAuth;
@@ -85,6 +86,7 @@ public class TestDDPCollections {
      * Tests that an invalid subscription name is rejected
      * @throws Exception
      */
+    @Ignore // Meteor no longer throws a 404 when the subscription is invalid. 
     @Test
     public void testInvalidSubscription() throws Exception {
         // test error handling for invalid subscription

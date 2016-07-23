@@ -26,6 +26,12 @@ Usage
 The best thing to do is to look at the JUnit tests.  The tests are separated 
 into authentication tests and collection tests.  
 
+To run the tests, you will need to run a Meteor application that has some packages
+for testing, such as `accounts-password` and `insecure`.
+
+Download this [Meteor project](https://github.com/kenyee/meteor-test-ddp-endpoint)
+and run Meteor. Then run `gradle test` to verify that the tests pass.
+
 The DDPTestClientObserver in the JUnit tests is the core handler of DDP message 
 results and is a simple example of holding enough state to implement a simple 
 Meteor client.  Note that in a real application, you'll probably want to use an 
