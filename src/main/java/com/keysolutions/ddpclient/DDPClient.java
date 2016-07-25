@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Observable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -104,7 +105,7 @@ public class DDPClient extends Observable {
     }
     private CONNSTATE mConnState;
     /** current command ID */
-    private volatile int mCurrentId;
+    private AtomicInteger mCurrentId;
     /** callback tracking for DDP commands */
     private Map<String, DDPListener> mMsgListeners;
     /** web socket client */
@@ -263,7 +264,7 @@ public class DDPClient extends Observable {
         mMeteorServerAddress = (trustManagers != null ? "wss://" : "ws://")
                 + meteorServerIp + ":"
                 + meteorServerPort.toString() + "/websocket";
-        this.mCurrentId = 0;
+        this.mCurrentId = new AtomicInteger(0);
         this.mMsgListeners = new ConcurrentHashMap<String, DDPListener>();
         createWsClient(mMeteorServerAddress);
 
@@ -377,11 +378,11 @@ public class DDPClient extends Observable {
      * Note: increment/decrement/set on int (but not long) are atomic on the JVM
      * However, See http://stackoverflow.com/a/1006712
      * While int's are atomic on 32bit+ systems, they are
-     * not guaranteed to be the same across threads. (volatile fixes this. Alternatively, we can use AtomicInteger)
+     * not guaranteed to be the same across threads. (volatile or AtomicInteger are good options)
      * @return integer DDP call ID
      */
     private int nextId() {
-        return ++mCurrentId;
+        return mCurrentId.incrementAndGet();
     }
 
     /**
