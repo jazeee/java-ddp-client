@@ -1,5 +1,5 @@
 /*
-* (c)Copyright 2013-2014 Ken Yee, KEY Enterprise Solutions 
+* (c)Copyright 2013-2014 Ken Yee, KEY Enterprise Solutions
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Observable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -104,7 +105,7 @@ public class DDPClient extends Observable {
     }
     private CONNSTATE mConnState;
     /** current command ID */
-    private int mCurrentId;
+    private AtomicInteger mCurrentId;
     /** callback tracking for DDP commands */
     private Map<String, DDPListener> mMsgListeners;
     /** web socket client */
@@ -123,7 +124,7 @@ public class DDPClient extends Observable {
      * supplied IP and port (note: running Meteor locally will typically have a
      * port of 3000 but port 80 is the typical default for publicly deployed
      * servers)
-     * 
+     *
      * @param meteorServerIp IP of Meteor server
      * @param meteorServerPort Port of Meteor server, if left null it will default to 3000
      * @param useSSL Whether to use SSL for websocket encryption
@@ -151,13 +152,13 @@ public class DDPClient extends Observable {
       throws URISyntaxException {
         this(meteorServerIp, meteorServerPort, useSSL, new Gson());
     }
-    
+
     /**
      * Instantiates a Meteor DDP client for the Meteor server located at the
      * supplied IP and port (note: running Meteor locally will typically have a
      * port of 3000 but port 80 is the typical default for publicly deployed
      * servers)
-     * 
+     *
      * @param meteorServerIp IP of Meteor server
      * @param meteorServerPort Port of Meteor server, if left null it will default to 3000
      * @param trustManagers Explicitly defined trust managers, if null no SSL encryption would be used.
@@ -185,13 +186,13 @@ public class DDPClient extends Observable {
       throws URISyntaxException {
         this(meteorServerIp, meteorServerPort, trustManagers, new Gson());
     }
-    
+
     /**
      * Instantiates a Meteor DDP client for the Meteor server located at the
      * supplied IP and port (note: running Meteor locally will typically have a
      * port of 3000 but port 80 is the typical default for publicly deployed
      * servers)
-     * 
+     *
      * @param meteorServerIp
      *            - IP of Meteor server
      * @param meteorServerPort
@@ -221,7 +222,7 @@ public class DDPClient extends Observable {
       throws URISyntaxException {
         this(meteorServerIp, meteorServerPort, false);
     }
-    
+
     /**
      * Initializes a websocket connection
      * @param meteorServerIp IP address of Meteor server
@@ -234,7 +235,7 @@ public class DDPClient extends Observable {
     	TrustManager[] trustManagers = null;
         if (useSSL) {
             try {
-                // set up trustkeystore w/ Java's default trusted 
+                // set up trustkeystore w/ Java's default trusted
                 TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
                 trustManagerFactory.init((KeyStore)null);
                 trustManagers = trustManagerFactory.getTrustManagers();
@@ -244,10 +245,10 @@ public class DDPClient extends Observable {
                 log.warn("Error accessing Java default trustmanager algorithms {}", e);
             }
         }
-        
+
         initWebsocket(meteorServerIp, meteorServerPort, trustManagers);
     }
-    
+
     /**
      * Initializes a websocket connection
      * @param meteorServerIp IP address of Meteor server
@@ -263,10 +264,10 @@ public class DDPClient extends Observable {
         mMeteorServerAddress = (trustManagers != null ? "wss://" : "ws://")
                 + meteorServerIp + ":"
                 + meteorServerPort.toString() + "/websocket";
-        this.mCurrentId = 0;
+        this.mCurrentId = new AtomicInteger(0);
         this.mMsgListeners = new ConcurrentHashMap<String, DDPListener>();
         createWsClient(mMeteorServerAddress);
-        
+
         mTrustManagers = trustManagers;
         initWsClientSSL();
     }
@@ -288,7 +289,7 @@ public class DDPClient extends Observable {
             }
         }
     }
-    
+
     /**
      * Creates a web socket client
      * @param meteorServerAddress Websocket address of Meteor server
@@ -341,7 +342,7 @@ public class DDPClient extends Observable {
 
     /**
      * Called when connection is closed
-     * 
+     *
      * @param code WebSocket Error code
      * @param reason Reason msg for error
      * @param remote Whether error is from remote side
@@ -356,7 +357,7 @@ public class DDPClient extends Observable {
 
     /**
      * Error handling for any errors over the web-socket connection
-     * 
+     *
      * @param ex exception to convert to event
      */
     private void handleError(Exception ex) {
@@ -373,17 +374,20 @@ public class DDPClient extends Observable {
 
     /**
      * Increments and returns the client's current ID
-     * 
+     *
      * Note: increment/decrement/set on int (but not long) are atomic on the JVM
+     * However, See http://stackoverflow.com/a/1006712
+     * While int's are atomic on 32bit+ systems, they are
+     * not guaranteed to be the same across threads. (volatile or AtomicInteger are good options)
      * @return integer DDP call ID
      */
     private int nextId() {
-        return ++mCurrentId;
+        return mCurrentId.incrementAndGet();
     }
 
     /**
      * Registers a client DDP command results callback listener
-     * 
+     *
      * @param resultListener command results callback
      * @return ID for next command
      */
@@ -415,7 +419,7 @@ public class DDPClient extends Observable {
             mConnectionStarted = true;
         }
     }
-    
+
     /**
      * Closes an open websocket connection.
      * This is async, so you'll get a close notification callback when it eventually closes.
@@ -428,7 +432,7 @@ public class DDPClient extends Observable {
 
     /**
      * Call a meteor method with the supplied parameters
-     * 
+     *
      * @param method name of corresponding Meteor method
      * @param params arguments to be passed to the Meteor method
      * @param resultListener DDP command listener for this method call
@@ -448,7 +452,7 @@ public class DDPClient extends Observable {
 
     /**
      * Call a meteor method with the supplied parameters
-     * 
+     *
      * @param method name of corresponding Meteor method
      * @param params arguments to be passed to the Meteor method
      * @return ID for next command
@@ -459,7 +463,7 @@ public class DDPClient extends Observable {
 
     /**
      * Subscribe to a Meteor record set with the supplied parameters
-     * 
+     *
      * @param name name of the corresponding Meteor subscription
      * @param params arguments corresponding to the Meteor subscription
      * @param resultListener DDP command listener for this call
@@ -480,7 +484,7 @@ public class DDPClient extends Observable {
 
     /**
      * Subscribe to a Meteor record set with the supplied parameters
-     * 
+     *
      * @param name name of the corresponding Meteor subscription
      * @param params arguments corresponding to the Meteor subscription
      * @return ID for next command
@@ -491,7 +495,7 @@ public class DDPClient extends Observable {
 
     /**
      * Unsubscribe from a Meteor record set
-     * 
+     *
      * @param name name of the corresponding Meteor subscription
      * @param resultListener DDP command listener for this call
      * @return ID for next command
@@ -509,7 +513,7 @@ public class DDPClient extends Observable {
 
     /**
      * Unsubscribe from a Meteor record set
-     * 
+     *
      * @param name name of the corresponding Meteor subscription
      * @return ID for next command
      * @deprecated use #unsubscribe(int subId) instead
@@ -545,7 +549,7 @@ public class DDPClient extends Observable {
 
     /**
      * Inserts document into collection from the client
-     * 
+     *
      * @param collectionName Name of collection
      * @param insertParams Document fields
      * @param resultListener DDP command listener for this call
@@ -560,7 +564,7 @@ public class DDPClient extends Observable {
 
     /**
      * Inserts document into collection from client-side
-     * 
+     *
      * @param collectionName Name of collection
      * @param insertParams Document fields
      * @return Returns command ID
@@ -572,7 +576,7 @@ public class DDPClient extends Observable {
 
     /**
      * Deletes collection document from the client
-     * 
+     *
      * @param collectionName Name of collection
      * @param docId _id of document
      * @param resultListener Callback handler for command results
@@ -594,7 +598,7 @@ public class DDPClient extends Observable {
     /**
      * Updates a collection document from the client NOTE: for security reasons,
      * you can only do this one document at a time.
-     * 
+     *
      * @param collectionName
      *            Name of collection
      * @param docId _id of document
@@ -615,7 +619,7 @@ public class DDPClient extends Observable {
     /**
      * Updates a collection document from the client NOTE: for security reasons,
      * you can only do this one document at a time.
-     * 
+     *
      * @param collectionName Name of collection
      * @param docId _id of document
      * @param updateParams Map w/ mongoDB parameters to pass in for update
@@ -625,7 +629,7 @@ public class DDPClient extends Observable {
             Map<String, Object> updateParams) {
         return collectionUpdate(collectionName, docId, updateParams, null);
     }
-    
+
     /**
      * Pings the server...you'll get a Pong message back in the DDPListener
      * @param pingId of ping message so you can tell if you have data loss
@@ -646,7 +650,7 @@ public class DDPClient extends Observable {
 
     /**
      * Converts DDP-formatted message to JSON and sends over web-socket
-     * 
+     *
      * @param msgParams parameters for DDP msg
      */
     public void send(Map<String, Object> msgParams) {
@@ -663,7 +667,7 @@ public class DDPClient extends Observable {
     /**
      * Notifies observers of this DDP client of messages received from the
      * Meteor server
-     * 
+     *
      * @param msg received msg from websocket
      */
     @SuppressWarnings("unchecked")
