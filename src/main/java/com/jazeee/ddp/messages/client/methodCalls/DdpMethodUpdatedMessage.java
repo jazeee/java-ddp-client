@@ -5,10 +5,10 @@ import java.util.List;
 
 import com.jazeee.ddp.messages.IDdpClientMessage;
 
-public class DdpUpdatedMessage implements IDdpClientMessage {
+public class DdpMethodUpdatedMessage implements IDdpClientMessage {
 	private final List<String> methods;
 
-	public DdpUpdatedMessage() {
+	public DdpMethodUpdatedMessage() {
 		super();
 		this.methods = Collections.emptyList();
 	}
