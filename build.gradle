@@ -6,8 +6,8 @@ apply plugin: 'maven'
 group = 'com.keysolutions'
 version = '1.0.0.4'
 // compile for JDK 1.5 for maximum backwards compatibility
-sourceCompatibility = 1.5
-targetCompatibility = 1.5
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 
 // get rid of bootclasspath warning by setting it

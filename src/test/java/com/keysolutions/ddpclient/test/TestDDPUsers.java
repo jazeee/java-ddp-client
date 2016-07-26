@@ -54,7 +54,7 @@ public class TestDDPUsers extends TestCase {
         // create DDP client instance and hook testobserver to it
         DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
         DDPTestClientObserver obs = new DDPTestClientObserver();
-        ddp.addObserver(obs);                    
+        ddp.addDDPListener(obs);                    
         // make connection to Meteor server
         ddp.connect();          
 

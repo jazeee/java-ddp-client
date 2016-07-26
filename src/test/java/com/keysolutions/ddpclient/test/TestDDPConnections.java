@@ -43,7 +43,7 @@ public class TestDDPConnections extends TestCase {
     public void testConnectionClosed() throws Exception {
         DDPClient ddp = new DDPClient("", 0);
         DDPTestClientObserver obs = new DDPTestClientObserver();
-        ddp.addObserver(obs);
+        ddp.addDDPListener(obs);
         // do this convoluted thing to test a private method
         Method method = DDPClient.class.getDeclaredMethod("connectionClosed", int.class, String.class, boolean.class);
         method.setAccessible(true);
@@ -62,7 +62,7 @@ public class TestDDPConnections extends TestCase {
         // create DDP client instance and hook testobserver to it
         DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
         DDPTestClientObserver obs = new DDPTestClientObserver();
-        ddp.addObserver(obs);                    
+        ddp.addDDPListener(obs);                    
         // make connection to Meteor server
         ddp.connect();          
 
@@ -87,7 +87,7 @@ public class TestDDPConnections extends TestCase {
         // create DDP client instance and hook testobserver to it
         DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
         DDPTestClientObserver obs = new DDPTestClientObserver();
-        ddp.addObserver(obs);                    
+        ddp.addDDPListener(obs);                    
         // make connection to Meteor server
         ddp.connect();          
 
@@ -127,7 +127,7 @@ public class TestDDPConnections extends TestCase {
         // create DDP client instance and hook testobserver to it
         DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
         DDPTestClientObserver obs = new DDPTestClientObserver();
-        ddp.addObserver(obs);                    
+        ddp.addDDPListener(obs);                    
         // make connection to Meteor server
         ddp.connect();          
 
@@ -166,7 +166,7 @@ public class TestDDPConnections extends TestCase {
         // create DDP client instance and hook testobserver to it
         DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, true);
         DDPTestClientObserver obs = new DDPTestClientObserver();
-        ddp.addObserver(obs);                    
+        ddp.addDDPListener(obs);                    
         // make connection to Meteor server
         ddp.connect();          
 
