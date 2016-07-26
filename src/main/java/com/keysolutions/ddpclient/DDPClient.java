@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -26,7 +27,7 @@ import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.java_websocket.handshake.ServerHandshake;
 
 import com.google.gson.Gson;
-import com.jazeee.ddp.IDDPListener;
+import com.jazeee.ddp.listeners.IDDPListener;
 
 /**
  * Java Meteor DDP websocket client
@@ -271,7 +272,7 @@ public class DDPClient {
 
 			@Override
 			public void onMessage(String message) {
-				received(message);
+				onReceived(message);
 			}
 
 			@Override
@@ -314,7 +315,7 @@ public class DDPClient {
 		// changed formatting to always return a JSON object
 		String closeMsg = "{\"msg\":\"closed\",\"code\":\"" + code + "\",\"reason\":\"" + reason + "\",\"remote\":" + remote + "}";
 		log.debug("{}", closeMsg);
-		received(closeMsg);
+		onReceived(closeMsg);
 	}
 
 	/**
@@ -330,7 +331,7 @@ public class DDPClient {
 		}
 		String errorMsg = "{\"msg\":\"error\",\"source\":\"WebSocketClient\",\"errormsg\":\"" + errmsg + "\"}";
 		log.debug("{}", errorMsg);
-		received(errorMsg);
+		onReceived(errorMsg);
 	}
 
 	/**
@@ -588,14 +589,14 @@ public class DDPClient {
 	/**
 	 * Notifies observers of this DDP client of messages received from the Meteor server
 	 * 
-	 * @param msg received msg from websocket
+	 * @param jsonMessage received msg from websocket
 	 */
-	@SuppressWarnings("unchecked")
-	public void received(String msg) {
-		log.debug("Received response: {}...", msg.substring(0, Math.min(1000, msg.length())));
+	public void onReceived(String jsonMessage) {
+		log.debug("Received response: {}...", jsonMessage.substring(0, Math.min(1000, jsonMessage.length())));
 		// generic object deserialization is from
 		// http://programmerbruce.blogspot.com/2011/06/gson-v-jackson.html
-		Map<String, Object> jsonFields = mGson.fromJson(msg, HashMap.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> jsonFields = mGson.fromJson(jsonMessage, HashMap.class);
 
 		// notify any command listeners if we get updated or result msgs
 		String msgtype = (String) jsonFields.get(DdpMessageField.MSG);
@@ -604,7 +605,8 @@ public class DDPClient {
 			return;
 		}
 		if (msgtype.equals(DdpMessageType.UPDATED)) {
-			ArrayList<String> methodIds = (ArrayList<String>) jsonFields.get(DdpMessageField.METHODS);
+			@SuppressWarnings("unchecked")
+			List<String> methodIds = (ArrayList<String>) jsonFields.get(DdpMessageField.METHODS);
 			for (String methodId : methodIds) {
 				IDDPListener listener = mMsgListeners.get(methodId);
 				if (listener != null) {
@@ -612,7 +614,8 @@ public class DDPClient {
 				}
 			}
 		} else if (msgtype.equals(DdpMessageType.READY)) {
-			ArrayList<String> subscriptionIds = (ArrayList<String>) jsonFields.get(DdpMessageField.SUBS);
+			@SuppressWarnings("unchecked")
+			List<String> subscriptionIds = (ArrayList<String>) jsonFields.get(DdpMessageField.SUBS);
 			for (String subscriptionId : subscriptionIds) {
 				IDDPListener listener = mMsgListeners.get(subscriptionId);
 				if (listener != null) {
@@ -626,7 +629,9 @@ public class DDPClient {
 			} else {
 				IDDPListener listener = mMsgListeners.get(msgId);
 				if (listener != null) {
-					listener.onNoSub(msgId, (Map<String, Object>) jsonFields.get(DdpMessageField.ERROR));
+					@SuppressWarnings("unchecked")
+					Map<String, Object> errorFields = (Map<String, Object>) jsonFields.get(DdpMessageField.ERROR);
+					listener.onNoSub(msgId, errorFields);
 					mMsgListeners.remove(msgId);
 				}
 			}

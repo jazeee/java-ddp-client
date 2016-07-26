@@ -20,11 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.logging.Logger;
 
-import com.jazeee.ddp.IDDPListener;
+import com.jazeee.ddp.listeners.IDDPListener;
 import com.keysolutions.ddpclient.DDPClient;
 import com.keysolutions.ddpclient.DDPClient.DdpMessageField;
 import com.keysolutions.ddpclient.DDPClient.DdpMessageType;
@@ -34,7 +32,7 @@ import com.keysolutions.ddpclient.DDPClient.DdpMessageType;
  *
  *         DDP client observer that handles enough messages for unit tests to work
  */
-public class DDPTestClientObserver implements IDDPListener, Observer {
+public class DDPTestClientObserver implements IDDPListener {
 	private final static Logger LOGGER = Logger.getLogger(DDPClient.class.getName());
 
 	public enum DDPSTATE {
@@ -60,18 +58,6 @@ public class DDPTestClientObserver implements IDDPListener, Observer {
 	public DDPTestClientObserver() {
 		mDdpState = DDPSTATE.Disconnected;
 		mCollections = new HashMap<String, Map<String, Object>>();
-	}
-
-	/**
-	 * Handles processing of DDP msgs
-	 */
-	@Override
-	public void update(Observable client, Object msg) {
-		if (msg instanceof Map<?, ?>) {
-			@SuppressWarnings("unchecked")
-			Map<String, Object> jsonFields = (Map<String, Object>) msg;
-			onDDPMessage(jsonFields);
-		}
 	}
 
 	@Override

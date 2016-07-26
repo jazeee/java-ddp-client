@@ -1,4 +1,4 @@
-package com.jazeee.ddp;
+package com.jazeee.ddp.listeners;
 
 public interface IDDPHeartbeatListener {
 
