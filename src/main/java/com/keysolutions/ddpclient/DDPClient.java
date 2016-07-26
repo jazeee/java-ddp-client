@@ -1,19 +1,3 @@
-/*
- * (c)Copyright 2013-2014 Ken Yee, KEY Enterprise Solutions 
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.keysolutions.ddpclient;
 
 import java.net.URI;
@@ -29,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -47,7 +31,6 @@ import com.jazeee.ddp.IDDPListener;
 /**
  * Java Meteor DDP websocket client
  * 
- * @author kenyee
  */
 public class DDPClient {
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
@@ -109,7 +92,7 @@ public class DDPClient {
 
 	private CONNSTATE mConnState;
 	/** current command ID */
-	private volatile AtomicInteger mCurrentId;
+	private AtomicLong mCurrentId;
 	/** callback tracking for DDP commands */
 	private Map<String, IDDPListener> mMsgListeners;
 	/** web socket client */
@@ -245,7 +228,7 @@ public class DDPClient {
 		if (meteorServerPort == null)
 			meteorServerPort = 3000;
 		mMeteorServerAddress = (trustManagers != null ? "wss://" : "ws://") + meteorServerIp + ":" + meteorServerPort.toString() + "/websocket";
-		this.mCurrentId = new AtomicInteger(0);
+		this.mCurrentId = new AtomicLong(0);
 		this.mMsgListeners = new ConcurrentHashMap<String, IDDPListener>();
 		ddpListeners.clear();
 		createWsClient(mMeteorServerAddress);
@@ -353,12 +336,9 @@ public class DDPClient {
 	/**
 	 * Increments and returns the client's current ID
 	 * 
-	 * Note: increment/decrement/set on int (but not long) are atomic on the JVM However, See http://stackoverflow.com/a/1006712 While int's are atomic on 32bit+ systems, they are
-	 * not guaranteed to be the same across threads. (volatile will fix this.)
-	 * 
-	 * @return integer DDP call ID
+	 * @return DDP call ID
 	 */
-	private int nextId() {
+	private long nextId() {
 		return mCurrentId.incrementAndGet();
 	}
 
@@ -368,11 +348,11 @@ public class DDPClient {
 	 * @param resultListener command results callback
 	 * @return ID for next command
 	 */
-	private int addCommmand(IDDPListener resultListener) {
-		int id = nextId();
+	private long addCommmand(IDDPListener resultListener) {
+		long id = nextId();
 		if (resultListener != null) {
 			// store listener for callbacks
-			mMsgListeners.put(Integer.toString(id), resultListener);
+			mMsgListeners.put(Long.toString(id), resultListener);
 		}
 		return id;
 	}
@@ -414,14 +394,14 @@ public class DDPClient {
 	 * @param resultListener DDP command listener for this method call
 	 * @return ID for next command
 	 */
-	public int call(String method, Object[] params, IDDPListener resultListener) {
+	public long call(String method, Object[] params, IDDPListener resultListener) {
 		Map<String, Object> callMsg = new HashMap<String, Object>();
 		callMsg.put(DdpMessageField.MSG, DdpMessageType.METHOD);
 		callMsg.put(DdpMessageField.METHOD, method);
 		callMsg.put(DdpMessageField.PARAMS, params);
 
-		int id = addCommmand(resultListener);
-		callMsg.put(DdpMessageField.ID, Integer.toString(id));
+		long id = addCommmand(resultListener);
+		callMsg.put(DdpMessageField.ID, Long.toString(id));
 		send(callMsg);
 		return id;
 	}
@@ -433,7 +413,7 @@ public class DDPClient {
 	 * @param params arguments to be passed to the Meteor method
 	 * @return ID for next command
 	 */
-	public int call(String method, Object[] params) {
+	public long call(String method, Object[] params) {
 		return call(method, params, null);
 	}
 
@@ -445,14 +425,14 @@ public class DDPClient {
 	 * @param resultListener DDP command listener for this call
 	 * @return ID for next command
 	 */
-	public int subscribe(String name, Object[] params, IDDPListener resultListener) {
+	public long subscribe(String name, Object[] params, IDDPListener resultListener) {
 		Map<String, Object> subMsg = new HashMap<String, Object>();
 		subMsg.put(DdpMessageField.MSG, DdpMessageType.SUB);
 		subMsg.put(DdpMessageField.NAME, name);
 		subMsg.put(DdpMessageField.PARAMS, params);
 
-		int id = addCommmand(resultListener);
-		subMsg.put(DdpMessageField.ID, Integer.toString(id));
+		long id = addCommmand(resultListener);
+		subMsg.put(DdpMessageField.ID, Long.toString(id));
 		send(subMsg);
 		return id;
 	}
@@ -464,39 +444,8 @@ public class DDPClient {
 	 * @param params arguments corresponding to the Meteor subscription
 	 * @return ID for next command
 	 */
-	public int subscribe(String name, Object[] params) {
+	public long subscribe(String name, Object[] params) {
 		return subscribe(name, params, null);
-	}
-
-	/**
-	 * Unsubscribe from a Meteor record set
-	 * 
-	 * @param name name of the corresponding Meteor subscription
-	 * @param resultListener DDP command listener for this call
-	 * @return ID for next command
-	 * @deprecated use #unsubscribe(int subId) instead
-	 */
-	@Deprecated
-	public int unsubscribe(String name, IDDPListener resultListener) {
-		Map<String, Object> unsubMsg = new HashMap<String, Object>();
-		unsubMsg.put(DdpMessageField.MSG, DdpMessageType.UNSUB);
-		unsubMsg.put(DdpMessageField.NAME, name);
-
-		int id = addCommmand(resultListener);
-		send(unsubMsg);
-		return id;
-	}
-
-	/**
-	 * Unsubscribe from a Meteor record set
-	 * 
-	 * @param name name of the corresponding Meteor subscription
-	 * @return ID for next command
-	 * @deprecated use #unsubscribe(int subId) instead
-	 */
-	@Deprecated
-	public int unsubscribe(String name) {
-		return unsubscribe(name, null);
 	}
 
 	/**
@@ -506,12 +455,12 @@ public class DDPClient {
 	 * @param resultListener result listener
 	 * @return ID for next command
 	 */
-	public int unsubscribe(int subId, IDDPListener resultListener) {
+	public long unsubscribe(long subId, IDDPListener resultListener) {
 		Map<String, Object> unsubMsg = new HashMap<String, Object>();
 		unsubMsg.put(DdpMessageField.MSG, DdpMessageType.UNSUB);
-		unsubMsg.put(DdpMessageField.ID, Integer.toString(subId));
+		unsubMsg.put(DdpMessageField.ID, Long.toString(subId));
 
-		int id = addCommmand(resultListener);
+		long id = addCommmand(resultListener);
 		send(unsubMsg);
 		return id;
 	}
@@ -522,7 +471,7 @@ public class DDPClient {
 	 * @param subId subscription ID from when you subscribed
 	 * @return ID for next command
 	 */
-	public int unsubscribe(int subId) {
+	public long unsubscribe(long subId) {
 		return unsubscribe(subId, null);
 	}
 
@@ -534,7 +483,7 @@ public class DDPClient {
 	 * @param resultListener DDP command listener for this call
 	 * @return Returns command ID
 	 */
-	public int collectionInsert(String collectionName, Map<String, Object> insertParams, IDDPListener resultListener) {
+	public long collectionInsert(String collectionName, Map<String, Object> insertParams, IDDPListener resultListener) {
 		Object[] collArgs = new Object[1];
 		collArgs[0] = insertParams;
 		return call("/" + collectionName + "/insert", collArgs);
@@ -547,7 +496,7 @@ public class DDPClient {
 	 * @param insertParams Document fields
 	 * @return Returns command ID
 	 */
-	public int collectionInsert(String collectionName, Map<String, Object> insertParams) {
+	public long collectionInsert(String collectionName, Map<String, Object> insertParams) {
 		return collectionInsert(collectionName, insertParams, null);
 	}
 
@@ -559,7 +508,7 @@ public class DDPClient {
 	 * @param resultListener Callback handler for command results
 	 * @return Returns command ID
 	 */
-	public int collectionDelete(String collectionName, String docId, IDDPListener resultListener) {
+	public long collectionDelete(String collectionName, String docId, IDDPListener resultListener) {
 		Object[] collArgs = new Object[1];
 		Map<String, Object> selector = new HashMap<String, Object>();
 		selector.put("_id", docId);
@@ -567,7 +516,7 @@ public class DDPClient {
 		return call("/" + collectionName + "/remove", collArgs);
 	}
 
-	public int collectionDelete(String collectionName, String docId) {
+	public long collectionDelete(String collectionName, String docId) {
 		return collectionDelete(collectionName, docId, null);
 	}
 
@@ -580,7 +529,7 @@ public class DDPClient {
 	 * @param resultListener Callback handler for command results
 	 * @return Returns command ID
 	 */
-	public int collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams, IDDPListener resultListener) {
+	public long collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams, IDDPListener resultListener) {
 		Map<String, Object> selector = new HashMap<String, Object>();
 		Object[] collArgs = new Object[2];
 		selector.put("_id", docId);
@@ -597,7 +546,7 @@ public class DDPClient {
 	 * @param updateParams Map w/ mongoDB parameters to pass in for update
 	 * @return Returns command ID
 	 */
-	public int collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams) {
+	public long collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams) {
 		return collectionUpdate(collectionName, docId, updateParams, null);
 	}
 
