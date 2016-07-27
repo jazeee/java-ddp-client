@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 
 import junit.framework.TestCase;
 
-import com.keysolutions.ddpclient.DDPClient;
+import com.keysolutions.ddpclient.DdpClient;
 
 /**
  * Test misc basic methods in DDP client
@@ -47,11 +47,10 @@ public class TestDDPBasic extends TestCase {
 	 * @throws Exception
 	 */
 	public void testHandleError() throws Exception {
-		DDPClient ddp = new DDPClient("", 0);
-		DdpTestClientListener obs = new DdpTestClientListener();
-		ddp.addDDPListener(obs);
+		DdpClient ddp = new DdpClient("", 0);
+		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		// do this convoluted thing to test a private method
-		Method method = DDPClient.class.getDeclaredMethod("handleError", Exception.class);
+		Method method = DdpClient.class.getDeclaredMethod("handleError", Exception.class);
 		method.setAccessible(true);
 		method.invoke(ddp, new Exception("ignore exception"));
 		assertEquals("WebSocketClient", obs.mErrorSource);

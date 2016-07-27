@@ -1,4 +1,4 @@
-package com.jazeee.utils;
+package com.jazeee.common.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;

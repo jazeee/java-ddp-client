@@ -1,5 +1,6 @@
 package com.jazeee.ddp.messages;
 
+import com.jazeee.common.utils.JazeeeStringUtils;
 import com.jazeee.ddp.messages.client.collections.DdpAddedBeforeCollectionMessage;
 import com.jazeee.ddp.messages.client.collections.DdpAddedToCollectionMessage;
 import com.jazeee.ddp.messages.client.collections.DdpChangedCollectionMessage;
@@ -14,7 +15,6 @@ import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodUpdatedMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpSubscriptionReadyMessage;
-import com.jazeee.utils.JazeeeStringUtils;
 
 public enum DdpClientMessageType {
 	//@formatter:off

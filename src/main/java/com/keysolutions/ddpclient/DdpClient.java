@@ -27,12 +27,15 @@ import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.java_websocket.handshake.ServerHandshake;
 
 import com.google.gson.Gson;
-import com.jazeee.ddp.listeners.IDDPListener;
+import com.jazeee.common.notifier.Notifier;
+import com.jazeee.ddp.listeners.IDdpHeartbeatListener;
+import com.jazeee.ddp.listeners.IDdpListener;
 import com.jazeee.ddp.messages.DdpClientMessageType;
 import com.jazeee.ddp.messages.DdpClientMessages;
 import com.jazeee.ddp.messages.IDdpClientMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPingMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
+import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodUpdatedMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
@@ -49,66 +52,19 @@ import com.jazeee.ddp.messages.server.subscriptions.DdpUnSubscribeMessage;
  * Java Meteor DDP websocket client
  * 
  */
-public class DDPClient {
+public class DdpClient {
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
-	/** Field names supported in the DDP protocol */
-	public static class DdpMessageField {
-		public static final String MSG = "msg";
-		public static final String ID = "id";
-		public static final String METHOD = "method";
-		public static final String METHODS = "methods";
-		public static final String SUBS = "subs";
-		public static final String PARAMS = "params";
-		public static final String RESULT = "result";
-		public static final String NAME = "name";
-		public static final String SERVER_ID = "server_id";
-		public static final String ERROR = "error";
-		public static final String SESSION = "session";
-		public static final String VERSION = "version";
-		public static final String SUPPORT = "support";
-		public static final String SOURCE = "source";
-		public static final String ERRORMSG = "errormsg";
-		public static final String CODE = "code";
-		public static final String REASON = "reason";
-		public static final String REMOTE = "remote";
-		public static final String COLLECTION = "collection";
-		public static final String FIELDS = "fields";
-		public static final String CLEARED = "cleared";
-	}
-
-	/** Message types supported in the DDP protocol */
-	public static class DdpMessageType {
-		// client -> server
-		public static final String CONNECT = "connect";
-		public static final String METHOD = "method";
-		// server -> client
-		public static final String CONNECTED = "connected";
-		public static final String UPDATED = "updated";
-		public static final String READY = "ready";
-		public static final String NOSUB = "nosub";
-		public static final String RESULT = "result";
-		public static final String SUB = "sub";
-		public static final String UNSUB = "unsub";
-		public static final String ERROR = "error";
-		public static final String CLOSED = "closed";
-		public static final String ADDED = "added";
-		public static final String REMOVED = "removed";
-		public static final String CHANGED = "changed";
-		public static final String PING = "ping";
-		public static final String PONG = "pong";
-	}
-
 	/** DDP connection state */
-	public enum CONNSTATE {
-		Disconnected, Connected, Closed,
+	public enum ConnectionState {
+		DISCONNECTED, CONNECTED, CLOSED,
 	}
 
-	private CONNSTATE connectionState;
+	private ConnectionState connectionState;
 	/** current command ID */
 	private AtomicLong currentMessageId;
 	/** callback tracking for DDP commands */
-	private Map<String, IDDPListener> messageListeners;
+	private Map<String, IDdpListener> messageListeners;
 	/** web socket client */
 	private WebSocketClient webSocketClient;
 	/** web socket address for reconnections */
@@ -120,7 +76,9 @@ public class DDPClient {
 	/** Google GSON object */
 	private final Gson gson;
 
-	private final Set<IDDPListener> ddpListeners = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<IDDPListener, Boolean>()));
+	private final Set<IDdpListener> ddpListeners = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<IDdpListener, Boolean>()));
+
+	private final Notifier<IDdpHeartbeatListener, IDdpClientHeartbeatMessage> heartbeatNotifier = new Notifier<>(new HeartbeatNotificationProcessor());
 
 	/**
 	 * Instantiates a Meteor DDP client for the Meteor server located at the supplied IP and port (note: running Meteor locally will typically have a port of 3000 but port 80 is
@@ -132,7 +90,7 @@ public class DDPClient {
 	 * @param gson A custom Gson instance to use for serialization
 	 * @throws URISyntaxException URI error
 	 */
-	public DDPClient(String meteorServerIp, Integer meteorServerPort, boolean useSSL, Gson gson) throws URISyntaxException {
+	public DdpClient(String meteorServerIp, Integer meteorServerPort, boolean useSSL, Gson gson) throws URISyntaxException {
 		this.gson = gson;
 		initWebsocket(meteorServerIp, meteorServerPort, useSSL);
 	}
@@ -146,7 +104,7 @@ public class DDPClient {
 	 * @param useSSL Whether to use SSL for websocket encryption
 	 * @throws URISyntaxException URI error
 	 */
-	public DDPClient(String meteorServerIp, Integer meteorServerPort, boolean useSSL) throws URISyntaxException {
+	public DdpClient(String meteorServerIp, Integer meteorServerPort, boolean useSSL) throws URISyntaxException {
 		this(meteorServerIp, meteorServerPort, useSSL, new Gson());
 	}
 
@@ -160,7 +118,7 @@ public class DDPClient {
 	 * @param gson A custom Gson instance to use for serialization
 	 * @throws URISyntaxException URI error
 	 */
-	public DDPClient(String meteorServerIp, Integer meteorServerPort, TrustManager[] trustManagers, Gson gson) throws URISyntaxException {
+	public DdpClient(String meteorServerIp, Integer meteorServerPort, TrustManager[] trustManagers, Gson gson) throws URISyntaxException {
 		this.gson = gson;
 		initWebsocket(meteorServerIp, meteorServerPort, trustManagers);
 	}
@@ -174,7 +132,7 @@ public class DDPClient {
 	 * @param trustManagers Explicitly defined trust managers, if null no SSL encryption would be used.
 	 * @throws URISyntaxException URI error
 	 */
-	public DDPClient(String meteorServerIp, Integer meteorServerPort, TrustManager[] trustManagers) throws URISyntaxException {
+	public DdpClient(String meteorServerIp, Integer meteorServerPort, TrustManager[] trustManagers) throws URISyntaxException {
 		this(meteorServerIp, meteorServerPort, trustManagers, new Gson());
 	}
 
@@ -187,7 +145,7 @@ public class DDPClient {
 	 * @param gson - A custom Gson instance to use for serialization
 	 * @throws URISyntaxException URI error
 	 */
-	public DDPClient(String meteorServerIp, Integer meteorServerPort, Gson gson) throws URISyntaxException {
+	public DdpClient(String meteorServerIp, Integer meteorServerPort, Gson gson) throws URISyntaxException {
 		this(meteorServerIp, meteorServerPort, false, gson);
 	}
 
@@ -199,7 +157,7 @@ public class DDPClient {
 	 * @param meteorServerPort - Port of Meteor server, if left null it will default to 3000
 	 * @throws URISyntaxException URI error
 	 */
-	public DDPClient(String meteorServerIp, Integer meteorServerPort) throws URISyntaxException {
+	public DdpClient(String meteorServerIp, Integer meteorServerPort) throws URISyntaxException {
 		this(meteorServerIp, meteorServerPort, false);
 	}
 
@@ -238,12 +196,12 @@ public class DDPClient {
 	 * @throws URISyntaxException
 	 */
 	private void initWebsocket(String meteorServerIp, Integer meteorServerPort, TrustManager[] trustManagers) throws URISyntaxException {
-		connectionState = CONNSTATE.Disconnected;
+		connectionState = ConnectionState.DISCONNECTED;
 		if (meteorServerPort == null)
 			meteorServerPort = 3000;
 		meteorServerIpAddress = (trustManagers != null ? "wss://" : "ws://") + meteorServerIp + ":" + meteorServerPort.toString() + "/websocket";
 		this.currentMessageId = new AtomicLong(0);
-		this.messageListeners = new ConcurrentHashMap<String, IDDPListener>();
+		this.messageListeners = new ConcurrentHashMap<String, IDdpListener>();
 		ddpListeners.clear();
 		createWsClient(meteorServerIpAddress);
 
@@ -358,7 +316,7 @@ public class DDPClient {
 	 * @param resultListener command results callback
 	 * @return ID for next command
 	 */
-	private String addCommmand(IDDPListener resultListener) {
+	private String addCommmand(IDdpListener resultListener) {
 		if (resultListener != null) {
 			long id = nextId();
 			// store listener for callbacks
@@ -408,7 +366,7 @@ public class DDPClient {
 	 * @param resultListener DDP command listener for this method call
 	 * @return ID for next command
 	 */
-	public String call(String method, Object[] params, IDDPListener resultListener) {
+	public String call(String method, Object[] params, IDdpListener resultListener) {
 		String id = addCommmand(resultListener);
 		DdpMethodCallMessage ddpMethodCallMessage = new DdpMethodCallMessage(id, method, params);
 		send(ddpMethodCallMessage);
@@ -434,7 +392,7 @@ public class DDPClient {
 	 * @param resultListener DDP command listener for this call
 	 * @return ID for next command
 	 */
-	public String subscribe(String name, Object[] params, IDDPListener resultListener) {
+	public String subscribe(String name, Object[] params, IDdpListener resultListener) {
 		String id = addCommmand(resultListener);
 		DdpSubscribeMessage ddpSubscribeMessage = new DdpSubscribeMessage(id, name, params);
 		send(ddpSubscribeMessage);
@@ -459,7 +417,7 @@ public class DDPClient {
 	 * @param resultListener result listener
 	 * @return ID for next command
 	 */
-	public String unsubscribe(String subId, IDDPListener resultListener) {
+	public String unsubscribe(String subId, IDdpListener resultListener) {
 		if (subId == null) {
 			subId = addCommmand(resultListener);
 		}
@@ -486,7 +444,7 @@ public class DDPClient {
 	 * @param resultListener DDP command listener for this call
 	 * @return Returns command ID
 	 */
-	public String collectionInsert(String collectionName, Map<String, Object> insertParams, IDDPListener resultListener) {
+	public String collectionInsert(String collectionName, Map<String, Object> insertParams, IDdpListener resultListener) {
 		Object[] collArgs = new Object[1];
 		collArgs[0] = insertParams;
 		return call("/" + collectionName + "/insert", collArgs);
@@ -511,7 +469,7 @@ public class DDPClient {
 	 * @param resultListener Callback handler for command results
 	 * @return Returns command ID
 	 */
-	public String collectionDelete(String collectionName, String docId, IDDPListener resultListener) {
+	public String collectionDelete(String collectionName, String docId, IDdpListener resultListener) {
 		Object[] collArgs = new Object[1];
 		Map<String, Object> selector = new HashMap<String, Object>();
 		selector.put("_id", docId);
@@ -532,7 +490,7 @@ public class DDPClient {
 	 * @param resultListener Callback handler for command results
 	 * @return Returns command ID
 	 */
-	public String collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams, IDDPListener resultListener) {
+	public String collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams, IDdpListener resultListener) {
 		Map<String, Object> selector = new HashMap<String, Object>();
 		Object[] collArgs = new Object[2];
 		selector.put("_id", docId);
@@ -559,7 +517,7 @@ public class DDPClient {
 	 * @param pingId of ping message so you can tell if you have data loss
 	 * @param resultListener DDP command listener for this call
 	 */
-	public void ping(String pingId, IDDPListener resultListener) {
+	public void ping(String pingId, IDdpListener resultListener) {
 		if (resultListener != null) {
 			messageListeners.put(pingId, resultListener);
 		}
@@ -587,7 +545,7 @@ public class DDPClient {
 			this.webSocketClient.send(json);
 		} catch (WebsocketNotConnectedException ex) {
 			handleError(ex);
-			connectionState = CONNSTATE.Closed;
+			connectionState = ConnectionState.CLOSED;
 		}
 	}
 
@@ -610,7 +568,7 @@ public class DDPClient {
 			case UPDATED:
 				List<String> methodIds = ((DdpMethodUpdatedMessage) ddpClientMessage).getMethods();
 				for (String methodId : methodIds) {
-					IDDPListener listener = messageListeners.get(methodId);
+					IDdpListener listener = messageListeners.get(methodId);
 					if (listener != null) {
 						listener.onUpdated(methodId);
 					}
@@ -619,7 +577,7 @@ public class DDPClient {
 			case READY:
 				List<String> subscriptionIds = ((DdpSubscriptionReadyMessage) ddpClientMessage).getSubscriptionIds();
 				for (String subscriptionId : subscriptionIds) {
-					IDDPListener listener = messageListeners.get(subscriptionId);
+					IDdpListener listener = messageListeners.get(subscriptionId);
 					if (listener != null) {
 						listener.onSubscriptionReady(subscriptionId);
 					}
@@ -631,7 +589,7 @@ public class DDPClient {
 				if (noSubscriptionMessageId == null) {
 					log.warn("No such subscription ID found!");
 				} else {
-					IDDPListener listener = messageListeners.get(noSubscriptionMessageId);
+					IDdpListener listener = messageListeners.get(noSubscriptionMessageId);
 					if (listener != null) {
 						listener.onNoSub(ddpNoSubscriptionMessage);
 						messageListeners.remove(noSubscriptionMessageId);
@@ -642,7 +600,7 @@ public class DDPClient {
 				DdpMethodResultMessage ddpMethodResultMessage = (DdpMethodResultMessage) ddpClientMessage;
 				String methodCallId = ddpMethodResultMessage.getId();
 				if (methodCallId != null) {
-					IDDPListener listener = messageListeners.get(methodCallId);
+					IDdpListener listener = messageListeners.get(methodCallId);
 					if (listener != null) {
 						listener.onResult(ddpMethodResultMessage);
 						messageListeners.remove(methodCallId);
@@ -650,51 +608,54 @@ public class DDPClient {
 				}
 				break;
 			case CONNECTED:
-				connectionState = CONNSTATE.Connected;
+				connectionState = ConnectionState.CONNECTED;
 				break;
 			case CLOSED:
-				connectionState = CONNSTATE.Closed;
+				connectionState = ConnectionState.CLOSED;
 				break;
 			case PING:
 				DdpClientPingMessage ddpClientPingMessage = ((DdpClientPingMessage) ddpClientMessage);
 				// automatically send PONG command back to server
 				send(ddpClientPingMessage.createPongResponse());
+				notifyHeartbeatListeners(ddpClientPingMessage);
 				break;
 			case PONG:
 				DdpClientPongMessage ddpClientPongMessage = ((DdpClientPongMessage) ddpClientMessage);
-				String pingId = ddpClientPongMessage.getId();
-				// let listeners know a Pong happened
-				IDDPListener listener = messageListeners.get(pingId);
-				if (listener != null) {
-					listener.onPong(pingId);
-					messageListeners.remove(pingId);
-				}
+				notifyHeartbeatListeners(ddpClientPongMessage);
 				break;
 			case ERROR:
 				log.error("{}", ddpClientMessage);
 				break;
 			default:
-				log.warn("Ignorming message type: {}", ddpClientMessageType);
+				log.warn("Ignoring message type: {}", ddpClientMessageType);
 				break;
 			}
 		}
-		for (IDDPListener ddpListener : ddpListeners) {
+		for (IDdpListener ddpListener : ddpListeners) {
 			ddpListener.onDdpMessage(ddpClientMessages);
 		}
 	}
 
-	public void addDDPListener(IDDPListener ddpListener) {
+	public void addDDPListener(IDdpListener ddpListener) {
 		ddpListeners.add(ddpListener);
 	}
 
-	public void removeDDPListener(IDDPListener ddpListener) {
+	public void removeDDPListener(IDdpListener ddpListener) {
 		ddpListeners.remove(ddpListener);
 	}
 
 	/**
 	 * @return current DDP connection state (disconnected/connected/closed)
 	 */
-	public CONNSTATE getState() {
+	public ConnectionState getState() {
 		return connectionState;
+	}
+
+	public void addHeartbeatListener(IDdpHeartbeatListener ddpHeartbeatListener) {
+		this.heartbeatNotifier.addListener(ddpHeartbeatListener);
+	}
+
+	public void notifyHeartbeatListeners(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
+		this.heartbeatNotifier.notifyListeners(ddpClientHeartbeatMessage);
 	}
 }

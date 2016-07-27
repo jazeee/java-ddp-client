@@ -1,6 +1,6 @@
 package com.jazeee.ddp.messages;
 
-import com.jazeee.utils.JazeeeStringUtils;
+import com.jazeee.common.utils.JazeeeStringUtils;
 
 public enum DdpServerMessageType {
 	//@formatter:off

@@ -2,7 +2,7 @@ package com.jazeee.ddp.listeners;
 
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
 
-public interface IDDPMethodListener {
+public interface IDdpMethodListener {
 
 	/**
 	 * Callback for method call with all result fields

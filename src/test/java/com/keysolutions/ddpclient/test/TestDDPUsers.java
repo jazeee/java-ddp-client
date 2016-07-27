@@ -22,10 +22,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.keysolutions.ddpclient.DDPClient;
-import com.keysolutions.ddpclient.test.DdpTestClientListener.DdpState;
-
 import junit.framework.TestCase;
+
+import com.keysolutions.ddpclient.DdpClient;
+import com.keysolutions.ddpclient.test.DdpTestClientListener.DdpState;
 
 /**
  * Test creation of Meteor users
@@ -34,12 +34,14 @@ import junit.framework.TestCase;
  */
 public class TestDDPUsers extends TestCase {
 
+	@Override
 	protected void setUp() throws Exception {
 		System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
 
 		super.setUp();
 	}
 
+	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}
@@ -54,10 +56,8 @@ public class TestDDPUsers extends TestCase {
 	public void testCreateUser() throws URISyntaxException, InterruptedException {
 		// TODO: does this belong inside the Java DDP client?
 		// create DDP client instance and hook testobserver to it
-		DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
-		DdpTestClientListener obs = new DdpTestClientListener();
-		ddp.addDDPListener(obs);
-		// make connection to Meteor server
+		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		ddp.connect();
 
 		// we need to wait a bit before the socket is opened but make sure it's successful

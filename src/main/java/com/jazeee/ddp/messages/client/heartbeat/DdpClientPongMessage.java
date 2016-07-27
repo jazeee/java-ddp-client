@@ -1,8 +1,7 @@
 package com.jazeee.ddp.messages.client.heartbeat;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
 
-public class DdpClientPongMessage implements IDdpClientMessage {
+public class DdpClientPongMessage implements IDdpClientHeartbeatMessage {
 	private final String id;
 
 	public DdpClientPongMessage() {

@@ -1,4 +1,4 @@
-package com.jazeee.utils;
+package com.jazeee.common.utils;
 
 public final class StatelessUtilityClassException extends RuntimeException {
 	private static final long serialVersionUID = 1L;

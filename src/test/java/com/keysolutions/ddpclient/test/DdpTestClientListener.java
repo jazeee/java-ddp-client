@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
-import com.jazeee.ddp.listeners.IDDPListener;
+import com.jazeee.ddp.listeners.IDdpListener;
 import com.jazeee.ddp.messages.DdpClientMessageType;
 import com.jazeee.ddp.messages.DdpClientMessages;
 import com.jazeee.ddp.messages.DdpErrorField;
@@ -33,17 +33,19 @@ import com.jazeee.ddp.messages.client.collections.DdpChangedCollectionMessage;
 import com.jazeee.ddp.messages.client.collections.DdpRemovedFromCollectionMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
 import com.jazeee.ddp.messages.client.connection.DdpDisconnectedMessage;
+import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
+import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
-import com.keysolutions.ddpclient.DDPClient;
+import com.keysolutions.ddpclient.DdpClient;
 
 /**
  * @author kenyee
  *
  *         DDP client observer that handles enough messages for unit tests to work
  */
-public class DdpTestClientListener implements IDDPListener {
-	private final static Logger LOGGER = Logger.getLogger(DDPClient.class.getName());
+public class DdpTestClientListener implements IDdpListener {
+	private final static Logger LOGGER = Logger.getLogger(DdpClient.class.getName());
 
 	public enum DdpState {
 		Disconnected, Connected, LoggedIn, Closed,
@@ -65,9 +67,11 @@ public class DdpTestClientListener implements IDDPListener {
 	public String mReadySubscription;
 	public String mPingId;
 
-	public DdpTestClientListener() {
+	public DdpTestClientListener(DdpClient ddpClient) {
 		mDdpState = DdpState.Disconnected;
 		mCollections = new HashMap<String, Map<String, Object>>();
+		ddpClient.addDDPListener(this);
+		ddpClient.addHeartbeatListener(this);
 	}
 
 	@Override
@@ -217,15 +221,13 @@ public class DdpTestClientListener implements IDDPListener {
 	}
 
 	@Override
-	public void onPong(String id) {
-		mPingId = id;
-	}
-
-	@Override
-	public void onPing(String pongId) {
-	}
-
-	@Override
 	public void onUpdated(String callId) {
+	}
+
+	@Override
+	public void processMessage(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
+		if (ddpClientHeartbeatMessage instanceof DdpClientPongMessage) {
+			mPingId = ddpClientHeartbeatMessage.getId();
+		}
 	}
 }
