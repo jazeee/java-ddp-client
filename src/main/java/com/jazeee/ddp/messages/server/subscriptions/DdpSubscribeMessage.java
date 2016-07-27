@@ -1,23 +1,27 @@
 package com.jazeee.ddp.messages.server.subscriptions;
 
-import java.util.UUID;
+import com.jazeee.ddp.messages.DdpServerMessageType;
+import com.jazeee.ddp.messages.server.AbstractDdpServerMessage;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
-
-public class DdpSubscribeMessage implements IDdpClientMessage {
+public class DdpSubscribeMessage extends AbstractDdpServerMessage {
 	private final String id;
 	private final String name;
-	private final String params;
+	private final Object params;
 
-	public DdpSubscribeMessage(String name) {
-		this(name, null);
+	public DdpSubscribeMessage(String id, String name) {
+		this(id, name, null);
 	}
 
-	public DdpSubscribeMessage(String name, String jsonQueryParams) {
+	public DdpSubscribeMessage(String id, String name, Object queryParams) {
 		super();
-		this.id = UUID.randomUUID().toString();
+		this.id = id;
 		this.name = name;
-		this.params = jsonQueryParams;
+		this.params = queryParams;
+	}
+
+	@Override
+	protected DdpServerMessageType getDdpServerMessageType() {
+		return DdpServerMessageType.SUB;
 	}
 
 	public String getId() {
@@ -28,7 +32,7 @@ public class DdpSubscribeMessage implements IDdpClientMessage {
 		return name;
 	}
 
-	public String getParams() {
+	public Object getParams() {
 		return params;
 	}
 

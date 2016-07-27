@@ -5,13 +5,13 @@ import com.jazeee.ddp.messages.IDdpClientMessage;
 public class DdpAddedToCollectionMessage implements IDdpClientMessage {
 	private final String collection;
 	private final String id;
-	private final String fields;
+	private final Object fields;
 
 	public DdpAddedToCollectionMessage() {
 		super();
 		this.collection = "";
 		this.id = "";
-		this.fields = "";
+		this.fields = null;
 	}
 
 	public String getCollection() {
@@ -22,7 +22,7 @@ public class DdpAddedToCollectionMessage implements IDdpClientMessage {
 		return id;
 	}
 
-	public String getFieldsAsJson() {
+	public Object getFields() {
 		return fields;
 	}
 
@@ -33,7 +33,7 @@ public class DdpAddedToCollectionMessage implements IDdpClientMessage {
 		builder.append(collection);
 		builder.append(", id=");
 		builder.append(id);
-		builder.append(", fieldsAsJson=");
+		builder.append(", fields=");
 		builder.append(fields);
 		builder.append("]");
 		return builder.toString();

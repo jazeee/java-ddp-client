@@ -4,9 +4,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
+import com.jazeee.ddp.messages.DdpServerMessageType;
+import com.jazeee.ddp.messages.server.AbstractDdpServerMessage;
 
-public class DdpConnectMessage implements IDdpClientMessage {
+public class DdpConnectMessage extends AbstractDdpServerMessage {
 	private final static String DDP_PROTOCOL_VERSION = "1";
 	private final String session;
 	private final String version;
@@ -21,6 +22,11 @@ public class DdpConnectMessage implements IDdpClientMessage {
 		this.session = session;
 		this.version = DDP_PROTOCOL_VERSION;
 		this.support = Arrays.asList(DDP_PROTOCOL_VERSION);
+	}
+
+	@Override
+	protected DdpServerMessageType getDdpServerMessageType() {
+		return DdpServerMessageType.CONNECT;
 	}
 
 	public String getSession() {

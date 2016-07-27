@@ -4,8 +4,8 @@ import com.jazeee.ddp.messages.IDdpClientMessage;
 
 public class DdpResultMessage implements IDdpClientMessage {
 	private final String id;
-	private final String error;
-	private final String result;
+	private final Error error;
+	private final Object result;
 
 	public DdpResultMessage() {
 		super();
@@ -18,11 +18,11 @@ public class DdpResultMessage implements IDdpClientMessage {
 		return id;
 	}
 
-	public String getError() {
+	public Error getError() {
 		return error;
 	}
 
-	public String getResult() {
+	public Object getResult() {
 		return result;
 	}
 

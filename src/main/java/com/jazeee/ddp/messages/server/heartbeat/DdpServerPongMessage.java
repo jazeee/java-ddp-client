@@ -1,19 +1,19 @@
-package com.jazeee.ddp.messages.server.subscriptions;
+package com.jazeee.ddp.messages.server.heartbeat;
 
 import com.jazeee.ddp.messages.DdpServerMessageType;
 import com.jazeee.ddp.messages.server.AbstractDdpServerMessage;
 
-public class DdpUnSubscribeMessage extends AbstractDdpServerMessage {
+public class DdpServerPongMessage extends AbstractDdpServerMessage {
 	private final String id;
 
-	public DdpUnSubscribeMessage(String id) {
+	public DdpServerPongMessage() {
 		super();
-		this.id = id;
+		this.id = "";
 	}
 
 	@Override
 	protected DdpServerMessageType getDdpServerMessageType() {
-		return DdpServerMessageType.UNSUB;
+		return DdpServerMessageType.PONG;
 	}
 
 	public String getId() {
@@ -23,8 +23,7 @@ public class DdpUnSubscribeMessage extends AbstractDdpServerMessage {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append(getClass().getSimpleName() + " [");
-		builder.append("id=");
+		builder.append(getClass().getSimpleName() + " [id=");
 		builder.append(id);
 		builder.append("]");
 		return builder.toString();

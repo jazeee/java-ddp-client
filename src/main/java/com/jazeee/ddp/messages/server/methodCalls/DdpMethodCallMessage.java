@@ -1,36 +1,36 @@
 package com.jazeee.ddp.messages.server.methodCalls;
 
-import java.util.UUID;
+import com.jazeee.ddp.messages.DdpServerMessageType;
+import com.jazeee.ddp.messages.server.AbstractDdpServerMessage;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
-
-public class DdpMethodCallMessage implements IDdpClientMessage {
-	private final String method;
-	private final String params;
+public class DdpMethodCallMessage extends AbstractDdpServerMessage {
 	private final String id;
+	private final String method;
+	private final Object params;
 	private final String randomSeed;
 
-	public DdpMethodCallMessage(String method) {
-		this(method, null);
-	}
-
-	public DdpMethodCallMessage(String method, String jsonParams) {
+	public DdpMethodCallMessage(String id, String method, Object params) {
 		super();
+		this.id = id;
 		this.method = method;
-		this.id = UUID.randomUUID().toString();
-		this.params = jsonParams;
+		this.params = params;
 		this.randomSeed = null;
 	}
 
-	public String getMethod() {
-		return method;
+	@Override
+	protected DdpServerMessageType getDdpServerMessageType() {
+		return DdpServerMessageType.METHOD;
 	}
 
 	public String getId() {
 		return id;
 	}
 
-	public String getParamsAsJson() {
+	public String getMethod() {
+		return method;
+	}
+
+	public Object getParams() {
 		return params;
 	}
 
@@ -42,7 +42,7 @@ public class DdpMethodCallMessage implements IDdpClientMessage {
 		builder.append(method);
 		builder.append(", id=");
 		builder.append(id);
-		builder.append(", getParamsAsJson=");
+		builder.append(", params=");
 		builder.append(params);
 		builder.append(", randomSeed=");
 		builder.append(randomSeed);

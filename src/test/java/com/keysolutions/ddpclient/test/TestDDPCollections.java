@@ -70,8 +70,8 @@ public class TestDDPCollections {
 		Object[] methodArgs = new Object[1];
 		EmailAuth emailpass = new EmailAuth(TestConstants.sMeteorUsername, TestConstants.sMeteorPassword);
 		methodArgs[0] = emailpass;
-		long methodId = mDdp.call("login", methodArgs, mObs);
-		assertEquals(1, methodId); // first ID should be 1
+		String methodId = mDdp.call("login", methodArgs, mObs);
+		assertEquals("1", methodId); // first ID should be 1
 
 		// we should get a message back after a bit..make sure it's successful
 		// we need to grab the "token" from the result for the next test
@@ -112,7 +112,7 @@ public class TestDDPCollections {
 	@Test
 	public void testUnsubscribe() throws Exception {
 		// test error handling for invalid subscription
-		long subId = mDdp.subscribe("testData", new Object[] {}, mObs);
+		String subId = mDdp.subscribe("testData", new Object[] {}, mObs);
 		// wait a bit to get confirmation
 		Thread.sleep(500);
 		// make sure we see subscriptions

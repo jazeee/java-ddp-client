@@ -7,12 +7,13 @@ import com.jazeee.ddp.messages.client.collections.DdpMovedBeforeCollectionMessag
 import com.jazeee.ddp.messages.client.collections.DdpRemovedFromCollectionMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectFailedMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
+import com.jazeee.ddp.messages.client.heartbeat.DdpClientPingMessage;
+import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodUpdatedMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpResultMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpSubscriptionReadyMessage;
-import com.jazeee.ddp.messages.heartbeat.DdpPingMessage;
-import com.jazeee.ddp.messages.heartbeat.DdpPongMessage;
+import com.jazeee.utils.JazeeeStringUtils;
 
 public enum DdpClientMessageType {
 	//@formatter:off
@@ -32,14 +33,15 @@ public enum DdpClientMessageType {
 	ADDED_BEFORE(DdpAddedBeforeCollectionMessage.class), 
 	MOVED_BEFORE(DdpMovedBeforeCollectionMessage.class), 
 	// Heartbeat
-	PING(DdpPingMessage.class), 
-	PONG(DdpPongMessage.class);
+	PING(DdpClientPingMessage.class), 
+	PONG(DdpClientPongMessage.class),
+	;
 	//@formatter:on
 	private final String ddpKey;
 	private final Class<? extends IDdpClientMessage> ddpMessageType;
 
 	DdpClientMessageType(Class<? extends IDdpClientMessage> ddpMessageType) {
-		this.ddpKey = this.name().toLowerCase();
+		this.ddpKey = JazeeeStringUtils.toCamelCase(this);
 		this.ddpMessageType = ddpMessageType;
 	}
 
