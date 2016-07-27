@@ -1,5 +1,5 @@
 package com.jazeee.ddp.listeners;
 
-public interface IDdpCollectionListener {
+public interface IDdpCollectionListener extends IDdpListener {
 
 }

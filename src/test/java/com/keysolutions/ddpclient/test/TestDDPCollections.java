@@ -55,7 +55,7 @@ public class TestDDPCollections {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.Connected);
 
 		// [password: passwordstring,
 		// user: {
@@ -74,7 +74,7 @@ public class TestDDPCollections {
 		// we should get a message back after a bit..make sure it's successful
 		// we need to grab the "token" from the result for the next test
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.LoggedIn);
+		assertTrue(obs.ddpState == DdpState.LoggedIn);
 
 		// verify that we have the user in the users collection after login
 		assertTrue(obs.mCollections.get("users").size() == 1);
@@ -98,8 +98,8 @@ public class TestDDPCollections {
 		// wait a bit to get an error
 		Thread.sleep(500);
 		// make sure we see the right error
-		assertEquals(404, obs.mErrorCode);
-		assertEquals("Subscription not found", obs.mErrorReason);
+		assertEquals(404, obs.ddpErrorField.getErrorCodeIfPossible());
+		assertEquals("Subscription not found", obs.ddpErrorField.getReason());
 	}
 
 	/**
@@ -251,7 +251,7 @@ public class TestDDPCollections {
 		options.put("value", "a");
 		options.put("docnum", 1);
 		options.put("testfield", "test");
-		options.put("userid", obs.mUserId);
+		options.put("userid", obs.userId);
 		// you need to specify the _id if you're creating doc on client
 		options.put("_id", UUID.randomUUID().toString());
 		ddp.collectionInsert("TestCollection", options, obs);
@@ -304,7 +304,7 @@ public class TestDDPCollections {
 		options.put("value", "a");
 		options.put("docnum", 1);
 		options.put("testfield", "test");
-		options.put("userid", obs.mUserId);
+		options.put("userid", obs.userId);
 		// you need to specify the _id if you're creating doc on client
 		options.put("_id", UUID.randomUUID().toString());
 		ddp.collectionInsert("TestCollection", options, obs);

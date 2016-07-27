@@ -55,7 +55,7 @@ public class TestDDPAuth extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.Connected);
 
 		// [password: passwordstring,
 		// user: {
@@ -71,11 +71,11 @@ public class TestDDPAuth extends TestCase {
 		String methodId = ddp.call("login", methodArgs, obs);
 		assertEquals("1", methodId); // first ID should be 1
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.Connected);
-		assertEquals(403, obs.mErrorCode);
-		assertEquals("User not found", obs.mErrorReason);
-		assertEquals("User not found [403]", obs.mErrorMsg);
-		assertEquals("Meteor.Error", obs.mErrorType);
+		assertTrue(obs.ddpState == DdpState.Connected);
+		assertEquals(403, obs.ddpErrorField.getErrorCodeIfPossible());
+		assertEquals("User not found", obs.ddpErrorField.getReason());
+		assertEquals("User not found [403]", obs.ddpErrorField.getMessage());
+		assertEquals("Meteor.Error", obs.ddpErrorField.getErrorType());
 	}
 
 	/**
@@ -92,7 +92,7 @@ public class TestDDPAuth extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.Connected);
 
 		// [password: passwordstring,
 		// user: {
@@ -108,11 +108,11 @@ public class TestDDPAuth extends TestCase {
 		String methodId = ddp.call("login", methodArgs, obs);
 		assertEquals("1", methodId); // first ID should be 1
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.Connected);
-		assertEquals(403, obs.mErrorCode);
-		assertEquals("User not found", obs.mErrorReason);
-		assertEquals("User not found [403]", obs.mErrorMsg);
-		assertEquals("Meteor.Error", obs.mErrorType);
+		assertTrue(obs.ddpState == DdpState.Connected);
+		assertEquals(403, obs.ddpErrorField.getErrorCodeIfPossible());
+		assertEquals("User not found", obs.ddpErrorField.getReason());
+		assertEquals("User not found [403]", obs.ddpErrorField.getMessage());
+		assertEquals("Meteor.Error", obs.ddpErrorField.getErrorType());
 	}
 
 	/**
@@ -130,7 +130,7 @@ public class TestDDPAuth extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.Connected);
 
 		// [password: passwordstring,
 		// user: {
@@ -149,13 +149,13 @@ public class TestDDPAuth extends TestCase {
 		// we should get a message back after a bit..make sure it's successful
 		// we need to grab the "token" from the result for the next test
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.LoggedIn);
+		assertTrue(obs.ddpState == DdpState.LoggedIn);
 
 		// verify that we have the user in the users collection after login
 		assertTrue(obs.mCollections.get("users").size() == 1);
 
 		// // test out resume token
-		String resumeToken = obs.mResumeToken;
+		String resumeToken = obs.resumeToken;
 		ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
 		obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
@@ -163,14 +163,14 @@ public class TestDDPAuth extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.Connected);
 
 		TokenAuth token = new TokenAuth(resumeToken);
 		methodArgs[0] = token;
 		methodId = ddp.call("login", methodArgs, obs);
 		assertEquals("1", methodId); // first ID should be 1
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.LoggedIn);
+		assertTrue(obs.ddpState == DdpState.LoggedIn);
 
 		// verify that we have the user in the users collection after login
 		assertTrue(obs.mCollections.get("users").size() == 1);

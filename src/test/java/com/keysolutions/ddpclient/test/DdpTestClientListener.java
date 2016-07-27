@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
-import com.jazeee.ddp.listeners.IDdpListener;
+import com.jazeee.ddp.listeners.IDdpAllListener;
 import com.jazeee.ddp.messages.DdpClientMessageType;
 import com.jazeee.ddp.messages.DdpClientMessages;
 import com.jazeee.ddp.messages.DdpErrorField;
@@ -33,6 +33,7 @@ import com.jazeee.ddp.messages.client.collections.DdpChangedCollectionMessage;
 import com.jazeee.ddp.messages.client.collections.DdpRemovedFromCollectionMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
 import com.jazeee.ddp.messages.client.connection.DdpDisconnectedMessage;
+import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
 import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
@@ -44,22 +45,19 @@ import com.keysolutions.ddpclient.DdpClient;
  *
  *         DDP client observer that handles enough messages for unit tests to work
  */
-public class DdpTestClientListener implements IDdpListener {
+public class DdpTestClientListener implements IDdpAllListener {
 	private final static Logger LOGGER = Logger.getLogger(DdpClient.class.getName());
 
 	public enum DdpState {
 		Disconnected, Connected, LoggedIn, Closed,
 	}
 
-	public DdpState mDdpState;
-	public String mResumeToken;
-	public String mUserId;
-	public int mErrorCode;
-	public String mErrorType;
-	public String mErrorReason;
-	public String mErrorMsg;
-	public String mErrorSource;
+	public DdpState ddpState;
+	public String resumeToken;
+	public String userId;
 	public String mSessionId;
+	public DdpTopLevelErrorMessage ddpTopLevelErrorMessage;
+	public DdpErrorField ddpErrorField;
 	public int mCloseCode;
 	public String mCloseReason;
 	public boolean mCloseFromRemote;
@@ -68,10 +66,11 @@ public class DdpTestClientListener implements IDdpListener {
 	public String mPingId;
 
 	public DdpTestClientListener(DdpClient ddpClient) {
-		mDdpState = DdpState.Disconnected;
+		ddpState = DdpState.Disconnected;
 		mCollections = new HashMap<String, Map<String, Object>>();
 		ddpClient.addDDPListener(this);
 		ddpClient.addHeartbeatListener(this);
+		ddpClient.addConnectionListener(this);
 	}
 
 	@Override
@@ -84,20 +83,7 @@ public class DdpTestClientListener implements IDdpListener {
 			}
 			switch (ddpClientMessageType) {
 			case ERROR:
-				DdpTopLevelErrorMessage ddpTopLevelErrorMessage = (DdpTopLevelErrorMessage) ddpClientMessage;
-				mErrorSource = ddpTopLevelErrorMessage.getSource();
-				mErrorMsg = ddpTopLevelErrorMessage.getErrorMessage();
-				break;
-			case CONNECTED:
-				mDdpState = DdpState.Connected;
-				mSessionId = ((DdpConnectedMessage) ddpClientMessage).getSession();
-				break;
-			case CLOSED:
-				mDdpState = DdpState.Closed;
-				DdpDisconnectedMessage ddpDisconnectedMessage = (DdpDisconnectedMessage) ddpClientMessage;
-				mCloseCode = Integer.parseInt(ddpDisconnectedMessage.getCode());
-				mCloseReason = ddpDisconnectedMessage.getReason();
-				mCloseFromRemote = ddpDisconnectedMessage.getRemote();
+				ddpTopLevelErrorMessage = (DdpTopLevelErrorMessage) ddpClientMessage;
 				break;
 			case ADDED:
 				DdpAddedToCollectionMessage ddpAddedToCollectionMessage = (DdpAddedToCollectionMessage) ddpClientMessage;
@@ -186,30 +172,19 @@ public class DdpTestClientListener implements IDdpListener {
 			Map<String, Object> result = (Map<String, Object>) ddpResultMessage.getResult();
 			// login method is always "1"
 			// REVIEW: is there a better way to figure out if it's a login result?
-			mResumeToken = (String) result.get("token");
-			mUserId = (String) result.get("id");
-			LOGGER.finer("Resume token: " + mResumeToken + " for user " + mUserId);
-			mDdpState = DdpState.LoggedIn;
+			resumeToken = (String) result.get("token");
+			userId = (String) result.get("id");
+			LOGGER.finer("Resume token: " + resumeToken + " for user " + userId);
+			ddpState = DdpState.LoggedIn;
 		}
-		DdpErrorField error = ddpResultMessage.getError();
-		processError(error);
+		ddpErrorField = ddpResultMessage.getError();
 		// TODO: save results for method calls
-	}
-
-	private void processError(DdpErrorField error) {
-		if (error != null) {
-			mErrorCode = (int) error.getErrorCodeIfPossible();
-			mErrorMsg = error.getMessage();
-			mErrorType = error.getErrorType();
-			mErrorReason = error.getReason();
-		}
 	}
 
 	@Override
 	public void onNoSub(DdpNoSubscriptionMessage ddpNoSubscriptionMessage) {
-		DdpErrorField error = ddpNoSubscriptionMessage.getError();
-		processError(error);
-		if (error == null) {
+		ddpErrorField = ddpNoSubscriptionMessage.getError();
+		if (ddpErrorField == null) {
 			// if there's no error, it just means a subscription was unsubscribed
 			mReadySubscription = null;
 		}
@@ -228,6 +203,21 @@ public class DdpTestClientListener implements IDdpListener {
 	public void processMessage(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
 		if (ddpClientHeartbeatMessage instanceof DdpClientPongMessage) {
 			mPingId = ddpClientHeartbeatMessage.getId();
+		}
+	}
+
+	@Override
+	public void processMessage(IDdpClientConnectionMessage ddpClientConnectionMessage) {
+		if (ddpClientConnectionMessage instanceof DdpConnectedMessage) {
+			DdpConnectedMessage ddpConnectedMessage = (DdpConnectedMessage) ddpClientConnectionMessage;
+			ddpState = DdpState.Connected;
+			mSessionId = ddpConnectedMessage.getSession();
+		} else if (ddpClientConnectionMessage instanceof DdpDisconnectedMessage) {
+			ddpState = DdpState.Closed;
+			DdpDisconnectedMessage ddpDisconnectedMessage = (DdpDisconnectedMessage) ddpClientConnectionMessage;
+			mCloseCode = Integer.parseInt(ddpDisconnectedMessage.getCode());
+			mCloseReason = ddpDisconnectedMessage.getReason();
+			mCloseFromRemote = ddpDisconnectedMessage.getRemote();
 		}
 	}
 }

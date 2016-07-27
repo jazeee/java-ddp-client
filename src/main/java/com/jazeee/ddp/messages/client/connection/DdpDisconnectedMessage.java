@@ -1,8 +1,7 @@
 package com.jazeee.ddp.messages.client.connection;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
 
-public class DdpDisconnectedMessage implements IDdpClientMessage {
+public class DdpDisconnectedMessage implements IDdpClientConnectionMessage {
 	private final String code;
 	private final String reason;
 	private final Boolean remote;

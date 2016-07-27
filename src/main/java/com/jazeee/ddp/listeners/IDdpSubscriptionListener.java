@@ -2,7 +2,7 @@ package com.jazeee.ddp.listeners;
 
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
 
-public interface IDdpSubscriptionListener {
+public interface IDdpSubscriptionListener extends IDdpListener {
 
 	/**
 	 * Callback for method's "ready" event (for subscriptions)

@@ -19,6 +19,7 @@ package com.keysolutions.ddpclient.test;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -37,7 +38,6 @@ public class TestDDPUsers extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
-
 		super.setUp();
 	}
 
@@ -52,7 +52,6 @@ public class TestDDPUsers extends TestCase {
 	 * @throws URISyntaxException
 	 * @throws InterruptedException
 	 */
-	@SuppressWarnings("unchecked")
 	public void testCreateUser() throws URISyntaxException, InterruptedException {
 		// TODO: does this belong inside the Java DDP client?
 		// create DDP client instance and hook testobserver to it
@@ -62,7 +61,7 @@ public class TestDDPUsers extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.Connected);
 
 		// subscribe to user collection
 		ddp.subscribe("users", new Object[] {});
@@ -80,7 +79,9 @@ public class TestDDPUsers extends TestCase {
 		assertNotNull(userColl);
 		boolean foundUser;
 		for (Entry<String, Object> entry : userColl.entrySet()) {
+			@SuppressWarnings("unchecked")
 			Map<String, Object> fields = (Map<String, Object>) entry.getValue();
+			@SuppressWarnings("unchecked")
 			ArrayList<Map<String, Object>> emails = (ArrayList<Map<String, Object>>) fields.get("emails");
 			assertFalse(emails.get(0).get("address").equals("test2@test.com"));
 		}
@@ -97,15 +98,17 @@ public class TestDDPUsers extends TestCase {
 		Thread.sleep(500);
 
 		// make sure we have no errors
-		assertEquals(0, obs.mErrorCode);
+		assertNull(obs.ddpErrorField);
 
 		// check that users collection has this user
 		userColl = obs.mCollections.get("users");
 		assertNotNull(userColl);
 		foundUser = false;
 		for (Entry<String, Object> entry : userColl.entrySet()) {
+			@SuppressWarnings("unchecked")
 			Map<String, Object> fields = (Map<String, Object>) entry.getValue();
-			ArrayList<Map<String, Object>> emails = (ArrayList<Map<String, Object>>) fields.get("emails");
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> emails = (ArrayList<Map<String, Object>>) fields.get("emails");
 			if (emails.get(0).get("address").equals("test2@test.com")) {
 				foundUser = true;
 				break;

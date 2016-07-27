@@ -1,8 +1,7 @@
 package com.jazeee.ddp.messages.client.connection;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
 
-public class DdpConnectFailedMessage implements IDdpClientMessage {
+public class DdpConnectFailedMessage implements IDdpClientConnectionMessage {
 	private final String version;
 
 	public DdpConnectFailedMessage() {

@@ -23,10 +23,10 @@ public class DdpErrorField {
 	}
 
 	public long getErrorCodeIfPossible() {
-		if (NumberUtils.isNumber(error)) {
+		if (error != null && NumberUtils.isNumber(error)) {
 			return Math.round(Double.parseDouble(error));
 		}
-		return -1;
+		return 0;
 	}
 
 	public String getReason() {

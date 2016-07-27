@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,11 +27,14 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import com.google.gson.Gson;
 import com.jazeee.common.notifier.Notifier;
+import com.jazeee.common.utils.WeakHashSet;
+import com.jazeee.ddp.listeners.IDdpAllListener;
+import com.jazeee.ddp.listeners.IDdpConnectionListener;
 import com.jazeee.ddp.listeners.IDdpHeartbeatListener;
-import com.jazeee.ddp.listeners.IDdpListener;
 import com.jazeee.ddp.messages.DdpClientMessageType;
 import com.jazeee.ddp.messages.DdpClientMessages;
 import com.jazeee.ddp.messages.IDdpClientMessage;
+import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPingMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
 import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
@@ -64,7 +66,7 @@ public class DdpClient {
 	/** current command ID */
 	private AtomicLong currentMessageId;
 	/** callback tracking for DDP commands */
-	private Map<String, IDdpListener> messageListeners;
+	private Map<String, IDdpAllListener> messageListeners;
 	/** web socket client */
 	private WebSocketClient webSocketClient;
 	/** web socket address for reconnections */
@@ -76,9 +78,10 @@ public class DdpClient {
 	/** Google GSON object */
 	private final Gson gson;
 
-	private final Set<IDdpListener> ddpListeners = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<IDdpListener, Boolean>()));
+	private final Set<IDdpAllListener> ddpListeners = Collections.synchronizedSet(new WeakHashSet<IDdpAllListener>());
 
-	private final Notifier<IDdpHeartbeatListener, IDdpClientHeartbeatMessage> heartbeatNotifier = new Notifier<>(new HeartbeatNotificationProcessor());
+	private final Notifier<IDdpHeartbeatListener, IDdpClientHeartbeatMessage> heartbeatNotifier = new Notifier<>(new DdpClientHeartbeatNotificationProcessor());
+	private final Notifier<IDdpConnectionListener, IDdpClientConnectionMessage> connectionNotifier = new Notifier<>(new DdpConnectionNotificationProcessor());
 
 	/**
 	 * Instantiates a Meteor DDP client for the Meteor server located at the supplied IP and port (note: running Meteor locally will typically have a port of 3000 but port 80 is
@@ -201,7 +204,7 @@ public class DdpClient {
 			meteorServerPort = 3000;
 		meteorServerIpAddress = (trustManagers != null ? "wss://" : "ws://") + meteorServerIp + ":" + meteorServerPort.toString() + "/websocket";
 		this.currentMessageId = new AtomicLong(0);
-		this.messageListeners = new ConcurrentHashMap<String, IDdpListener>();
+		this.messageListeners = new ConcurrentHashMap<String, IDdpAllListener>();
 		ddpListeners.clear();
 		createWsClient(meteorServerIpAddress);
 
@@ -316,7 +319,7 @@ public class DdpClient {
 	 * @param resultListener command results callback
 	 * @return ID for next command
 	 */
-	private String addCommmand(IDdpListener resultListener) {
+	private String addCommmand(IDdpAllListener resultListener) {
 		if (resultListener != null) {
 			long id = nextId();
 			// store listener for callbacks
@@ -366,7 +369,7 @@ public class DdpClient {
 	 * @param resultListener DDP command listener for this method call
 	 * @return ID for next command
 	 */
-	public String call(String method, Object[] params, IDdpListener resultListener) {
+	public String call(String method, Object[] params, IDdpAllListener resultListener) {
 		String id = addCommmand(resultListener);
 		DdpMethodCallMessage ddpMethodCallMessage = new DdpMethodCallMessage(id, method, params);
 		send(ddpMethodCallMessage);
@@ -392,7 +395,7 @@ public class DdpClient {
 	 * @param resultListener DDP command listener for this call
 	 * @return ID for next command
 	 */
-	public String subscribe(String name, Object[] params, IDdpListener resultListener) {
+	public String subscribe(String name, Object[] params, IDdpAllListener resultListener) {
 		String id = addCommmand(resultListener);
 		DdpSubscribeMessage ddpSubscribeMessage = new DdpSubscribeMessage(id, name, params);
 		send(ddpSubscribeMessage);
@@ -417,7 +420,7 @@ public class DdpClient {
 	 * @param resultListener result listener
 	 * @return ID for next command
 	 */
-	public String unsubscribe(String subId, IDdpListener resultListener) {
+	public String unsubscribe(String subId, IDdpAllListener resultListener) {
 		if (subId == null) {
 			subId = addCommmand(resultListener);
 		}
@@ -444,7 +447,7 @@ public class DdpClient {
 	 * @param resultListener DDP command listener for this call
 	 * @return Returns command ID
 	 */
-	public String collectionInsert(String collectionName, Map<String, Object> insertParams, IDdpListener resultListener) {
+	public String collectionInsert(String collectionName, Map<String, Object> insertParams, IDdpAllListener resultListener) {
 		Object[] collArgs = new Object[1];
 		collArgs[0] = insertParams;
 		return call("/" + collectionName + "/insert", collArgs);
@@ -469,7 +472,7 @@ public class DdpClient {
 	 * @param resultListener Callback handler for command results
 	 * @return Returns command ID
 	 */
-	public String collectionDelete(String collectionName, String docId, IDdpListener resultListener) {
+	public String collectionDelete(String collectionName, String docId, IDdpAllListener resultListener) {
 		Object[] collArgs = new Object[1];
 		Map<String, Object> selector = new HashMap<String, Object>();
 		selector.put("_id", docId);
@@ -490,7 +493,7 @@ public class DdpClient {
 	 * @param resultListener Callback handler for command results
 	 * @return Returns command ID
 	 */
-	public String collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams, IDdpListener resultListener) {
+	public String collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams, IDdpAllListener resultListener) {
 		Map<String, Object> selector = new HashMap<String, Object>();
 		Object[] collArgs = new Object[2];
 		selector.put("_id", docId);
@@ -517,7 +520,7 @@ public class DdpClient {
 	 * @param pingId of ping message so you can tell if you have data loss
 	 * @param resultListener DDP command listener for this call
 	 */
-	public void ping(String pingId, IDdpListener resultListener) {
+	public void ping(String pingId, IDdpAllListener resultListener) {
 		if (resultListener != null) {
 			messageListeners.put(pingId, resultListener);
 		}
@@ -568,7 +571,7 @@ public class DdpClient {
 			case UPDATED:
 				List<String> methodIds = ((DdpMethodUpdatedMessage) ddpClientMessage).getMethods();
 				for (String methodId : methodIds) {
-					IDdpListener listener = messageListeners.get(methodId);
+					IDdpAllListener listener = messageListeners.get(methodId);
 					if (listener != null) {
 						listener.onUpdated(methodId);
 					}
@@ -577,7 +580,7 @@ public class DdpClient {
 			case READY:
 				List<String> subscriptionIds = ((DdpSubscriptionReadyMessage) ddpClientMessage).getSubscriptionIds();
 				for (String subscriptionId : subscriptionIds) {
-					IDdpListener listener = messageListeners.get(subscriptionId);
+					IDdpAllListener listener = messageListeners.get(subscriptionId);
 					if (listener != null) {
 						listener.onSubscriptionReady(subscriptionId);
 					}
@@ -589,7 +592,7 @@ public class DdpClient {
 				if (noSubscriptionMessageId == null) {
 					log.warn("No such subscription ID found!");
 				} else {
-					IDdpListener listener = messageListeners.get(noSubscriptionMessageId);
+					IDdpAllListener listener = messageListeners.get(noSubscriptionMessageId);
 					if (listener != null) {
 						listener.onNoSub(ddpNoSubscriptionMessage);
 						messageListeners.remove(noSubscriptionMessageId);
@@ -600,7 +603,7 @@ public class DdpClient {
 				DdpMethodResultMessage ddpMethodResultMessage = (DdpMethodResultMessage) ddpClientMessage;
 				String methodCallId = ddpMethodResultMessage.getId();
 				if (methodCallId != null) {
-					IDdpListener listener = messageListeners.get(methodCallId);
+					IDdpAllListener listener = messageListeners.get(methodCallId);
 					if (listener != null) {
 						listener.onResult(ddpMethodResultMessage);
 						messageListeners.remove(methodCallId);
@@ -609,9 +612,15 @@ public class DdpClient {
 				break;
 			case CONNECTED:
 				connectionState = ConnectionState.CONNECTED;
+				notifyConnectionListeners((IDdpClientConnectionMessage) ddpClientMessage);
+				break;
+			case FAILED:
+				connectionState = ConnectionState.CLOSED;
+				notifyConnectionListeners((IDdpClientConnectionMessage) ddpClientMessage);
 				break;
 			case CLOSED:
 				connectionState = ConnectionState.CLOSED;
+				notifyConnectionListeners((IDdpClientConnectionMessage) ddpClientMessage);
 				break;
 			case PING:
 				DdpClientPingMessage ddpClientPingMessage = ((DdpClientPingMessage) ddpClientMessage);
@@ -631,16 +640,16 @@ public class DdpClient {
 				break;
 			}
 		}
-		for (IDdpListener ddpListener : ddpListeners) {
+		for (IDdpAllListener ddpListener : ddpListeners) {
 			ddpListener.onDdpMessage(ddpClientMessages);
 		}
 	}
 
-	public void addDDPListener(IDdpListener ddpListener) {
+	public void addDDPListener(IDdpAllListener ddpListener) {
 		ddpListeners.add(ddpListener);
 	}
 
-	public void removeDDPListener(IDdpListener ddpListener) {
+	public void removeDDPListener(IDdpAllListener ddpListener) {
 		ddpListeners.remove(ddpListener);
 	}
 
@@ -657,5 +666,13 @@ public class DdpClient {
 
 	public void notifyHeartbeatListeners(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
 		this.heartbeatNotifier.notifyListeners(ddpClientHeartbeatMessage);
+	}
+
+	public void addConnectionListener(IDdpConnectionListener ddpConnectionListener) {
+		this.connectionNotifier.addListener(ddpConnectionListener);
+	}
+
+	public void notifyConnectionListeners(IDdpClientConnectionMessage ddpClientConnectionMessage) {
+		this.connectionNotifier.notifyListeners(ddpClientConnectionMessage);
 	}
 }
