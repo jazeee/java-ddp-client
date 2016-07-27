@@ -1,8 +1,7 @@
 package com.jazeee.ddp.messages.client.collections;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
 
-public class DdpRemovedFromCollectionMessage implements IDdpClientMessage {
+public class DdpRemovedFromCollectionMessage implements IDdpCollectionMessage {
 	private final String collection;
 	private final String id;
 

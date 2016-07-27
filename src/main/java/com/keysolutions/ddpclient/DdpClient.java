@@ -6,11 +6,8 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,23 +24,24 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import com.google.gson.Gson;
 import com.jazeee.common.notifier.Notifier;
-import com.jazeee.common.utils.WeakHashSet;
 import com.jazeee.ddp.listeners.IDdpAllListener;
+import com.jazeee.ddp.listeners.IDdpCollectionListener;
 import com.jazeee.ddp.listeners.IDdpConnectionListener;
 import com.jazeee.ddp.listeners.IDdpHeartbeatListener;
 import com.jazeee.ddp.listeners.IDdpMethodCallListener;
+import com.jazeee.ddp.listeners.IDdpSubscriptionListener;
+import com.jazeee.ddp.listeners.IDdpTopLevelErrorListener;
 import com.jazeee.ddp.messages.DdpClientMessageType;
 import com.jazeee.ddp.messages.DdpClientMessages;
+import com.jazeee.ddp.messages.DdpTopLevelErrorMessage;
 import com.jazeee.ddp.messages.IDdpClientMessage;
+import com.jazeee.ddp.messages.client.collections.IDdpCollectionMessage;
+import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
 import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPingMessage;
-import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
 import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
-import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
-import com.jazeee.ddp.messages.client.methodCalls.DdpMethodUpdatedMessage;
 import com.jazeee.ddp.messages.client.methodCalls.IDdpMethodCallMessage;
-import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
-import com.jazeee.ddp.messages.client.subscriptions.DdpSubscriptionReadyMessage;
+import com.jazeee.ddp.messages.client.subscriptions.IDdpSubscriptionMessage;
 import com.jazeee.ddp.messages.deserializers.GsonClientMessagesDeserializer;
 import com.jazeee.ddp.messages.server.IDdpServerMessage;
 import com.jazeee.ddp.messages.server.connection.DdpConnectMessage;
@@ -56,7 +54,7 @@ import com.jazeee.ddp.messages.server.subscriptions.DdpUnSubscribeMessage;
  * Java Meteor DDP websocket client
  * 
  */
-public class DdpClient implements IDdpHeartbeatListener {
+public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener, IDdpTopLevelErrorListener {
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
 	/** DDP connection state */
@@ -80,11 +78,12 @@ public class DdpClient implements IDdpHeartbeatListener {
 	/** Google GSON object */
 	private final Gson gson;
 
-	private final Set<IDdpAllListener> ddpListeners = Collections.synchronizedSet(new WeakHashSet<IDdpAllListener>());
-
 	private final Notifier<IDdpHeartbeatListener, IDdpClientHeartbeatMessage> heartbeatNotifier = new Notifier<>(new DdpClientHeartbeatNotificationProcessor());
 	private final Notifier<IDdpConnectionListener, IDdpClientConnectionMessage> connectionNotifier = new Notifier<>(new DdpConnectionNotificationProcessor());
 	private final Notifier<IDdpMethodCallListener, IDdpMethodCallMessage> methodCallNotifier = new Notifier<>(new DdpMethodCallNotificationProcessor());
+	private final Notifier<IDdpSubscriptionListener, IDdpSubscriptionMessage> subscriptionNotifier = new Notifier<>(new DdpSubscriptionNotificationProcessor());
+	private final Notifier<IDdpCollectionListener, IDdpCollectionMessage> collectionNotifier = new Notifier<>(new DdpCollectionNotificationProcessor());
+	private final Notifier<IDdpTopLevelErrorListener, DdpTopLevelErrorMessage> topLevelErrorNotifier = new Notifier<>(new DdpTopLevelErrorNotificationProcessor());
 
 	/**
 	 * Instantiates a Meteor DDP client for the Meteor server located at the supplied IP and port (note: running Meteor locally will typically have a port of 3000 but port 80 is
@@ -100,6 +99,7 @@ public class DdpClient implements IDdpHeartbeatListener {
 		this.gson = gson;
 		initWebsocket(meteorServerIp, meteorServerPort, useSSL);
 		this.heartbeatNotifier.addListener(this);
+		this.connectionNotifier.addListener(this);
 	}
 
 	/**
@@ -210,7 +210,6 @@ public class DdpClient implements IDdpHeartbeatListener {
 		meteorServerIpAddress = (trustManagers != null ? "wss://" : "ws://") + meteorServerIp + ":" + meteorServerPort.toString() + "/websocket";
 		this.currentMessageId = new AtomicLong(0);
 		this.messageListeners = new ConcurrentHashMap<String, IDdpAllListener>();
-		ddpListeners.clear();
 		createWsClient(meteorServerIpAddress);
 
 		this.trustManagers = trustManagers;
@@ -573,73 +572,38 @@ public class DdpClient implements IDdpHeartbeatListener {
 				continue;
 			}
 			switch (ddpClientMessageType) {
-			case READY:
-				List<String> subscriptionIds = ((DdpSubscriptionReadyMessage) ddpClientMessage).getSubscriptionIds();
-				for (String subscriptionId : subscriptionIds) {
-					IDdpAllListener listener = messageListeners.get(subscriptionId);
-					if (listener != null) {
-						listener.onSubscriptionReady(subscriptionId);
-					}
-				}
+			case CONNECTED:
+			case FAILED:
+			case CLOSED:
+				notifyConnectionListeners((IDdpClientConnectionMessage) ddpClientMessage);
 				break;
+			case READY:
 			case NOSUB:
-				DdpNoSubscriptionMessage ddpNoSubscriptionMessage = (DdpNoSubscriptionMessage) ddpClientMessage;
-				String noSubscriptionMessageId = ddpNoSubscriptionMessage.getId();
-				if (noSubscriptionMessageId == null) {
-					log.warn("No such subscription ID found!");
-				} else {
-					IDdpAllListener listener = messageListeners.get(noSubscriptionMessageId);
-					if (listener != null) {
-						listener.onNoSub(ddpNoSubscriptionMessage);
-						messageListeners.remove(noSubscriptionMessageId);
-					}
-				}
+				notifySubscriptionListeners((IDdpSubscriptionMessage) ddpClientMessage);
 				break;
 			case RESULT:
-				notifyMethodCallListeners((DdpMethodResultMessage) ddpClientMessage);
-				break;
 			case UPDATED:
-				notifyMethodCallListeners((DdpMethodUpdatedMessage) ddpClientMessage);
+				notifyMethodCallListeners((IDdpMethodCallMessage) ddpClientMessage);
 				break;
-			case CONNECTED:
-				connectionState = ConnectionState.CONNECTED;
-				notifyConnectionListeners((IDdpClientConnectionMessage) ddpClientMessage);
-				break;
-			case FAILED:
-				connectionState = ConnectionState.CLOSED;
-				notifyConnectionListeners((IDdpClientConnectionMessage) ddpClientMessage);
-				break;
-			case CLOSED:
-				connectionState = ConnectionState.CLOSED;
-				notifyConnectionListeners((IDdpClientConnectionMessage) ddpClientMessage);
+			case ADDED:
+			case ADDED_BEFORE:
+			case CHANGED:
+			case REMOVED:
+			case MOVED_BEFORE:
+				notifyCollectionListeners((IDdpCollectionMessage) ddpClientMessage);
 				break;
 			case PING:
-				DdpClientPingMessage ddpClientPingMessage = ((DdpClientPingMessage) ddpClientMessage);
-				notifyHeartbeatListeners(ddpClientPingMessage);
-				break;
 			case PONG:
-				DdpClientPongMessage ddpClientPongMessage = ((DdpClientPongMessage) ddpClientMessage);
-				notifyHeartbeatListeners(ddpClientPongMessage);
+				notifyHeartbeatListeners((IDdpClientHeartbeatMessage) ddpClientMessage);
 				break;
 			case ERROR:
-				log.error("{}", ddpClientMessage);
+				notifyTopLevelErrorListeners((DdpTopLevelErrorMessage) ddpClientMessage);
 				break;
 			default:
 				log.warn("Ignoring message type: {}", ddpClientMessageType);
 				break;
 			}
 		}
-		for (IDdpAllListener ddpListener : ddpListeners) {
-			ddpListener.onDdpMessage(ddpClientMessages);
-		}
-	}
-
-	public void addDDPListener(IDdpAllListener ddpListener) {
-		ddpListeners.add(ddpListener);
-	}
-
-	public void removeDDPListener(IDdpAllListener ddpListener) {
-		ddpListeners.remove(ddpListener);
 	}
 
 	/**
@@ -673,6 +637,30 @@ public class DdpClient implements IDdpHeartbeatListener {
 		this.methodCallNotifier.notifyListeners(ddpMethodCallMessage);
 	}
 
+	public void addSubscriptionListener(IDdpSubscriptionListener ddpSubscriptionListener) {
+		this.subscriptionNotifier.addListener(ddpSubscriptionListener);
+	}
+
+	public void notifySubscriptionListeners(IDdpSubscriptionMessage ddpSubscriptionMessage) {
+		this.subscriptionNotifier.notifyListeners(ddpSubscriptionMessage);
+	}
+
+	public void addCollectionListener(IDdpCollectionListener ddpCollectionListener) {
+		this.collectionNotifier.addListener(ddpCollectionListener);
+	}
+
+	public void notifyCollectionListeners(IDdpCollectionMessage ddpCollectionMessage) {
+		this.collectionNotifier.notifyListeners(ddpCollectionMessage);
+	}
+
+	public void addTopLevelErrorListener(IDdpTopLevelErrorListener ddpTopLevelErrorListener) {
+		this.topLevelErrorNotifier.addListener(ddpTopLevelErrorListener);
+	}
+
+	public void notifyTopLevelErrorListeners(DdpTopLevelErrorMessage ddpTopLevelErrorMessage) {
+		this.topLevelErrorNotifier.notifyListeners(ddpTopLevelErrorMessage);
+	}
+
 	@Override
 	public void processMessage(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
 		if (ddpClientHeartbeatMessage instanceof DdpClientPingMessage) {
@@ -680,5 +668,19 @@ public class DdpClient implements IDdpHeartbeatListener {
 			DdpClientPingMessage ddpClientPingMessage = (DdpClientPingMessage) ddpClientHeartbeatMessage;
 			send(ddpClientPingMessage.createPongResponse());
 		}
+	}
+
+	@Override
+	public void processMessage(IDdpClientConnectionMessage ddpClientConnectionMessage) {
+		if (ddpClientConnectionMessage instanceof DdpConnectedMessage) {
+			connectionState = ConnectionState.CONNECTED;
+		} else {
+			connectionState = ConnectionState.CLOSED;
+		}
+	}
+
+	@Override
+	public void processMessage(DdpTopLevelErrorMessage ddpTopLevelErrorMessage) {
+		log.error("{}", ddpTopLevelErrorMessage);
 	}
 }

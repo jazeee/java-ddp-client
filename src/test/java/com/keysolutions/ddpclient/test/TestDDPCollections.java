@@ -55,7 +55,7 @@ public class TestDDPCollections {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// [password: passwordstring,
 		// user: {
@@ -74,10 +74,10 @@ public class TestDDPCollections {
 		// we should get a message back after a bit..make sure it's successful
 		// we need to grab the "token" from the result for the next test
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.LoggedIn);
+		assertTrue(obs.ddpState == DdpState.LOGGED_IN);
 
 		// verify that we have the user in the users collection after login
-		assertTrue(obs.mCollections.get("users").size() == 1);
+		assertTrue(obs.collections.get("users").size() == 1);
 	}
 
 	@After
@@ -114,13 +114,13 @@ public class TestDDPCollections {
 		// wait a bit to get confirmation
 		Thread.sleep(500);
 		// make sure we see subscriptions
-		assertTrue(obs.mReadySubscription != null);
+		assertTrue(obs.readySubscription != null);
 		// test unsubscribe
 		ddp.unsubscribe(subId, obs);
 		// wait a bit to get confirmation
 		Thread.sleep(500);
 		// make sure we see unsubscription
-		assertTrue(obs.mReadySubscription == null);
+		assertTrue(obs.readySubscription == null);
 	}
 
 	/**
@@ -147,10 +147,10 @@ public class TestDDPCollections {
 		ddp.call("addDoc", methodArgs);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(1000);
-		assertTrue(obs.mCollections.containsKey("TestCollection"));
-		assertEquals(2, obs.mCollections.get("TestCollection").size());
+		assertTrue(obs.collections.containsKey("TestCollection"));
+		assertEquals(2, obs.collections.get("TestCollection").size());
 		// check field values are correct
-		Map<String, Object> coll = obs.mCollections.get("TestCollection");
+		Map<String, Object> coll = obs.collections.get("TestCollection");
 		for (Entry<String, Object> doc : coll.entrySet()) {
 			Map<String, Object> fields = (Map<String, Object>) doc.getValue();
 			Map<String, Object> testarray = (Map<String, Object>) fields.get("testarray");
@@ -166,14 +166,14 @@ public class TestDDPCollections {
 		ddp.call("updateDoc", methodArgs);
 		Thread.sleep(1000);
 		// verify doc was updated
-		coll = obs.mCollections.get("TestCollection");
+		coll = obs.collections.get("TestCollection");
 		Map<String, Object> doc = (Map<String, Object>) coll.get(docId);
 		assertEquals("test", doc.get("testfield"));
 		// delete a document
 		ddp.call("deleteDoc", methodArgs);
 		Thread.sleep(1000);
 		// verify doc was deleted
-		assertEquals(1, obs.mCollections.get("TestCollection").size());
+		assertEquals(1, obs.collections.get("TestCollection").size());
 	}
 
 	/**
@@ -204,10 +204,10 @@ public class TestDDPCollections {
 		ddp.call("addDoc", methodArgs);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(1000);
-		assertTrue(obs.mCollections.containsKey("TestCollection"));
-		assertEquals(1, obs.mCollections.get("TestCollection").size());
+		assertTrue(obs.collections.containsKey("TestCollection"));
+		assertEquals(1, obs.collections.get("TestCollection").size());
 		// check field values are correct
-		Map<String, Object> coll = obs.mCollections.get("TestCollection");
+		Map<String, Object> coll = obs.collections.get("TestCollection");
 		for (Entry<String, Object> doc : coll.entrySet()) {
 			Map<String, Object> fields = (Map<String, Object>) doc.getValue();
 			Map<String, Object> testarray = (Map<String, Object>) fields.get("testarray");
@@ -224,14 +224,14 @@ public class TestDDPCollections {
 		ddp.call("updateDoc", methodArgs);
 		Thread.sleep(1000);
 		// verify doc was updated
-		coll = obs.mCollections.get("TestCollection");
+		coll = obs.collections.get("TestCollection");
 		Map<String, Object> doc = (Map<String, Object>) coll.get(docId);
 		assertEquals("test", doc.get("testfield"));
 		// delete a document
 		ddp.call("deleteDoc", methodArgs);
 		Thread.sleep(1000);
 		// verify doc was deleted
-		assertEquals(0, obs.mCollections.get("TestCollection").size());
+		assertEquals(0, obs.collections.get("TestCollection").size());
 	}
 
 	/**
@@ -257,10 +257,10 @@ public class TestDDPCollections {
 		ddp.collectionInsert("TestCollection", options, obs);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
-		assertTrue(obs.mCollections.containsKey("TestCollection"));
-		assertEquals(1, obs.mCollections.get("TestCollection").size());
+		assertTrue(obs.collections.containsKey("TestCollection"));
+		assertEquals(1, obs.collections.get("TestCollection").size());
 		// update document
-		Map<String, Object> coll = obs.mCollections.get("TestCollection");
+		Map<String, Object> coll = obs.collections.get("TestCollection");
 		Entry<String, Object> docEntry = coll.entrySet().iterator().next();
 		String docId = docEntry.getKey();
 		// do RESTful API call to simulate client-side update
@@ -272,14 +272,14 @@ public class TestDDPCollections {
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
 		// verify that collection got updated
-		coll = obs.mCollections.get("TestCollection");
+		coll = obs.collections.get("TestCollection");
 		Map<String, Object> doc = (Map<String, Object>) coll.get(docId);
 		assertEquals("hello", doc.get("testfield"));
 		// try to do a delete
 		ddp.collectionDelete("TestCollection", docId, obs);
 		// verify that the collection is now empty
 		Thread.sleep(500);
-		assertEquals(0, obs.mCollections.get("TestCollection").size());
+		assertEquals(0, obs.collections.get("TestCollection").size());
 	}
 
 	/**
@@ -310,10 +310,10 @@ public class TestDDPCollections {
 		ddp.collectionInsert("TestCollection", options, obs);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
-		assertTrue(obs.mCollections.containsKey("TestCollection"));
-		assertEquals(1, obs.mCollections.get("TestCollection").size());
+		assertTrue(obs.collections.containsKey("TestCollection"));
+		assertEquals(1, obs.collections.get("TestCollection").size());
 		// check that field added on server comes down
-		Map<String, Object> coll = obs.mCollections.get("TestCollection");
+		Map<String, Object> coll = obs.collections.get("TestCollection");
 		Entry<String, Object> docEntry = coll.entrySet().iterator().next();
 		String docId = docEntry.getKey();
 		Map<String, Object> doc = (Map<String, Object>) coll.get(docId);

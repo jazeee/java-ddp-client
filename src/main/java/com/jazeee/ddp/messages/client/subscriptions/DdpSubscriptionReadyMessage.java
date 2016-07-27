@@ -3,9 +3,7 @@ package com.jazeee.ddp.messages.client.subscriptions;
 import java.util.Collections;
 import java.util.List;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
-
-public class DdpSubscriptionReadyMessage implements IDdpClientMessage {
+public class DdpSubscriptionReadyMessage implements IDdpSubscriptionMessage {
 	private final List<String> subs;
 
 	public DdpSubscriptionReadyMessage() {
@@ -20,8 +18,8 @@ public class DdpSubscriptionReadyMessage implements IDdpClientMessage {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append(getClass().getSimpleName() + " [getSubscriptionIds=");
-		builder.append(getSubscriptionIds());
+		builder.append(getClass().getSimpleName() + " [subs=");
+		builder.append(subs);
 		builder.append("]");
 		return builder.toString();
 	}

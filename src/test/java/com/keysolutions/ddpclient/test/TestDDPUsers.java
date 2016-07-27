@@ -61,7 +61,7 @@ public class TestDDPUsers extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// subscribe to user collection
 		ddp.subscribe("users", new Object[] {});
@@ -75,7 +75,7 @@ public class TestDDPUsers extends TestCase {
 		Thread.sleep(500);
 
 		// make sure user doesn't exist
-		Map<String, Object> userColl = obs.mCollections.get("users");
+		Map<String, Object> userColl = obs.collections.get("users");
 		assertNotNull(userColl);
 		boolean foundUser;
 		for (Entry<String, Object> entry : userColl.entrySet()) {
@@ -101,7 +101,7 @@ public class TestDDPUsers extends TestCase {
 		assertNull(obs.ddpErrorField);
 
 		// check that users collection has this user
-		userColl = obs.mCollections.get("users");
+		userColl = obs.collections.get("users");
 		assertNotNull(userColl);
 		foundUser = false;
 		for (Entry<String, Object> entry : userColl.entrySet()) {

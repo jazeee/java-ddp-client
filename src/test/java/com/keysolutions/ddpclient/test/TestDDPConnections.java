@@ -50,9 +50,9 @@ public class TestDDPConnections extends TestCase {
 		Method method = DdpClient.class.getDeclaredMethod("connectionClosed", int.class, String.class, boolean.class);
 		method.setAccessible(true);
 		method.invoke(ddp, 5, "test", true);
-		assertEquals(5, obs.mCloseCode);
-		assertEquals("test", obs.mCloseReason);
-		assertEquals(true, obs.mCloseFromRemote);
+		assertEquals(5, obs.closeCode);
+		assertEquals("test", obs.closeReason);
+		assertEquals(true, obs.isClosedFromRemote);
 	}
 
 	/**
@@ -70,14 +70,14 @@ public class TestDDPConnections extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// try disconnect
 		ddp.disconnect();
 
 		// wait a bit to make sure our state has changed to closed
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Closed);
+		assertTrue(obs.ddpState == DdpState.CLOSED);
 	}
 
 	/**
@@ -95,28 +95,28 @@ public class TestDDPConnections extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// try disconnect
 		ddp.disconnect();
 
 		// wait a bit to make sure our state has changed to closed
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Closed);
+		assertTrue(obs.ddpState == DdpState.CLOSED);
 
 		// now test that we can reconnect to the server
 		ddp.connect();
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// try disconnect
 		ddp.disconnect();
 
 		// wait a bit to make sure our state has changed to closed
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Closed);
+		assertTrue(obs.ddpState == DdpState.CLOSED);
 	}
 
 	/**
@@ -134,21 +134,21 @@ public class TestDDPConnections extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// send a ping and verify we got a pong back
-		assertTrue(obs.mPingId == null);
+		assertTrue(obs.pingId == null);
 		ddp.ping("ping1", obs);
 		Thread.sleep(500);
-		assertNotNull(obs.mPingId);
-		assertTrue(obs.mPingId.equals("ping1"));
+		assertNotNull(obs.pingId);
+		assertTrue(obs.pingId.equals("ping1"));
 
 		// try disconnect
 		ddp.disconnect();
 
 		// wait a bit to make sure our state has changed to closed
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Closed);
+		assertTrue(obs.ddpState == DdpState.CLOSED);
 	}
 
 	/**
@@ -171,7 +171,7 @@ public class TestDDPConnections extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// try disconnect
 		ddp.disconnect();

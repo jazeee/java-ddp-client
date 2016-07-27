@@ -1,8 +1,7 @@
 package com.jazeee.ddp.messages.client.collections;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
 
-public class DdpAddedBeforeCollectionMessage implements IDdpClientMessage {
+public class DdpAddedBeforeCollectionMessage implements IDdpCollectionMessage {
 	private final String collection;
 	private final String id;
 	private final Object fields;

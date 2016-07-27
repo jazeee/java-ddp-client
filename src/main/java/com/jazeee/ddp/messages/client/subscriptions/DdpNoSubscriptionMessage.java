@@ -1,9 +1,8 @@
 package com.jazeee.ddp.messages.client.subscriptions;
 
 import com.jazeee.ddp.messages.DdpErrorField;
-import com.jazeee.ddp.messages.IDdpClientMessage;
 
-public class DdpNoSubscriptionMessage implements IDdpClientMessage {
+public class DdpNoSubscriptionMessage implements IDdpSubscriptionMessage {
 	private final String id;
 	private final DdpErrorField error;
 

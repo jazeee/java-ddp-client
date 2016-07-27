@@ -55,7 +55,7 @@ public class TestDDPAuth extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// [password: passwordstring,
 		// user: {
@@ -71,7 +71,7 @@ public class TestDDPAuth extends TestCase {
 		String methodId = ddp.call("login", methodArgs, obs);
 		assertEquals("1", methodId); // first ID should be 1
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 		assertEquals(403, obs.ddpErrorField.getErrorCodeIfPossible());
 		assertEquals("User not found", obs.ddpErrorField.getReason());
 		assertEquals("User not found [403]", obs.ddpErrorField.getMessage());
@@ -92,7 +92,7 @@ public class TestDDPAuth extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// [password: passwordstring,
 		// user: {
@@ -108,7 +108,7 @@ public class TestDDPAuth extends TestCase {
 		String methodId = ddp.call("login", methodArgs, obs);
 		assertEquals("1", methodId); // first ID should be 1
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 		assertEquals(403, obs.ddpErrorField.getErrorCodeIfPossible());
 		assertEquals("User not found", obs.ddpErrorField.getReason());
 		assertEquals("User not found [403]", obs.ddpErrorField.getMessage());
@@ -130,7 +130,7 @@ public class TestDDPAuth extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		// [password: passwordstring,
 		// user: {
@@ -149,10 +149,10 @@ public class TestDDPAuth extends TestCase {
 		// we should get a message back after a bit..make sure it's successful
 		// we need to grab the "token" from the result for the next test
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.LoggedIn);
+		assertTrue(obs.ddpState == DdpState.LOGGED_IN);
 
 		// verify that we have the user in the users collection after login
-		assertTrue(obs.mCollections.get("users").size() == 1);
+		assertTrue(obs.collections.get("users").size() == 1);
 
 		// // test out resume token
 		String resumeToken = obs.resumeToken;
@@ -163,16 +163,16 @@ public class TestDDPAuth extends TestCase {
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.Connected);
+		assertTrue(obs.ddpState == DdpState.CONNECTED);
 
 		TokenAuth token = new TokenAuth(resumeToken);
 		methodArgs[0] = token;
 		methodId = ddp.call("login", methodArgs, obs);
 		assertEquals("1", methodId); // first ID should be 1
 		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.LoggedIn);
+		assertTrue(obs.ddpState == DdpState.LOGGED_IN);
 
 		// verify that we have the user in the users collection after login
-		assertTrue(obs.mCollections.get("users").size() == 1);
+		assertTrue(obs.collections.get("users").size() == 1);
 	}
 }

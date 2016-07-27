@@ -23,14 +23,12 @@ import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import com.jazeee.ddp.listeners.IDdpAllListener;
-import com.jazeee.ddp.messages.DdpClientMessageType;
-import com.jazeee.ddp.messages.DdpClientMessages;
 import com.jazeee.ddp.messages.DdpErrorField;
 import com.jazeee.ddp.messages.DdpTopLevelErrorMessage;
-import com.jazeee.ddp.messages.IDdpClientMessage;
 import com.jazeee.ddp.messages.client.collections.DdpAddedToCollectionMessage;
 import com.jazeee.ddp.messages.client.collections.DdpChangedCollectionMessage;
 import com.jazeee.ddp.messages.client.collections.DdpRemovedFromCollectionMessage;
+import com.jazeee.ddp.messages.client.collections.IDdpCollectionMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
 import com.jazeee.ddp.messages.client.connection.DdpDisconnectedMessage;
 import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
@@ -39,6 +37,8 @@ import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
 import com.jazeee.ddp.messages.client.methodCalls.IDdpMethodCallMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
+import com.jazeee.ddp.messages.client.subscriptions.DdpSubscriptionReadyMessage;
+import com.jazeee.ddp.messages.client.subscriptions.IDdpSubscriptionMessage;
 import com.keysolutions.ddpclient.DdpClient;
 
 /**
@@ -50,107 +50,100 @@ public class DdpTestClientListener implements IDdpAllListener {
 	private final static Logger LOGGER = Logger.getLogger(DdpClient.class.getName());
 
 	public enum DdpState {
-		Disconnected, Connected, LoggedIn, Closed,
+		DISCONNECTED, CONNECTED, LOGGED_IN, CLOSED,
 	}
 
 	public DdpState ddpState;
 	public String resumeToken;
 	public String userId;
-	public String mSessionId;
+	public String sessionId;
 	public DdpTopLevelErrorMessage ddpTopLevelErrorMessage;
 	public DdpErrorField ddpErrorField;
-	public int mCloseCode;
-	public String mCloseReason;
-	public boolean mCloseFromRemote;
-	public Map<String, Map<String, Object>> mCollections;
-	public String mReadySubscription;
-	public String mPingId;
+	public int closeCode;
+	public String closeReason;
+	public boolean isClosedFromRemote;
+	public Map<String, Map<String, Object>> collections;
+	public String readySubscription;
+	public String pingId;
 
 	public DdpTestClientListener(DdpClient ddpClient) {
-		ddpState = DdpState.Disconnected;
-		mCollections = new HashMap<String, Map<String, Object>>();
-		ddpClient.addDDPListener(this);
+		ddpState = DdpState.DISCONNECTED;
+		collections = new HashMap<String, Map<String, Object>>();
 		ddpClient.addHeartbeatListener(this);
 		ddpClient.addConnectionListener(this);
+		ddpClient.addSubscriptionListener(this);
+		ddpClient.addCollectionListener(this);
 		ddpClient.addMethodCallListener(this);
+		ddpClient.addTopLevelErrorListener(this);
+	}
+
+	private void processMessage(DdpAddedToCollectionMessage ddpAddedToCollectionMessage) {
+		String collName = ddpAddedToCollectionMessage.getCollection();
+		Map<String, Object> collection = collections.get(collName);
+		if (!collections.containsKey(collName)) {
+			// add new collection
+			LOGGER.finer("Added collection " + collName);
+			collection = new HashMap<>();
+			collections.put(collName, collection);
+		}
+		String id = ddpAddedToCollectionMessage.getId();
+		LOGGER.fine("Added docid " + id + " to collection " + collName);
+		collection.put(id, ddpAddedToCollectionMessage.getFields());
+	}
+
+	private void processMessage(DdpRemovedFromCollectionMessage ddpRemovedFromCollectionMessage) {
+		String removedCollectionName = ddpRemovedFromCollectionMessage.getCollection();
+		if (collections.containsKey(removedCollectionName)) {
+			// remove IDs from collection
+			Map<String, Object> removedCollection = collections.get(removedCollectionName);
+			String docId = ddpRemovedFromCollectionMessage.getId();
+			LOGGER.fine("Removed doc: " + docId);
+			removedCollection.remove(docId);
+		} else {
+			LOGGER.warning("Received invalid removed msg for collection " + removedCollectionName);
+		}
+	}
+
+	public void processMessage(DdpChangedCollectionMessage ddpChangedCollectionMessage) {
+		// handle document updates
+		String changedCollectionName = ddpChangedCollectionMessage.getCollection();
+		if (collections.containsKey(changedCollectionName)) {
+			Map<String, Object> changedCollection = collections.get(changedCollectionName);
+			String docId = ddpChangedCollectionMessage.getId();
+			@SuppressWarnings("unchecked")
+			Map<String, Object> doc = (Map<String, Object>) changedCollection.get(docId);
+			if (doc != null) {
+				// take care of field updates
+				@SuppressWarnings("unchecked")
+				Map<String, Object> fields = (Map<String, Object>) ddpChangedCollectionMessage.getFields();
+				if (fields != null) {
+					for (Map.Entry<String, Object> field : fields.entrySet()) {
+						String fieldname = field.getKey();
+						doc.put(fieldname, field.getValue());
+					}
+				}
+				// take care of clearing fields
+				List<String> deletedFields = ddpChangedCollectionMessage.getDeletedFields();
+				for (String fieldname : deletedFields) {
+					if (doc.containsKey(fieldname)) {
+						doc.remove(fieldname);
+					}
+				}
+			}
+		} else {
+			LOGGER.warning("Received invalid changed msg for collection " + changedCollectionName);
+		}
 	}
 
 	@Override
-	public void onDdpMessage(DdpClientMessages ddpClientMessages) {
-		for (DdpClientMessageType ddpClientMessageType : ddpClientMessages.keySet()) {
-			IDdpClientMessage ddpClientMessage = ddpClientMessages.get(ddpClientMessageType);
-			if (ddpClientMessageType == null) {
-				// ignore {"server_id":"GqrKrbcSeDfTYDkzQ"} web socket msgs
-				continue;
-			}
-			switch (ddpClientMessageType) {
-			case ERROR:
-				ddpTopLevelErrorMessage = (DdpTopLevelErrorMessage) ddpClientMessage;
-				break;
-			case ADDED:
-				DdpAddedToCollectionMessage ddpAddedToCollectionMessage = (DdpAddedToCollectionMessage) ddpClientMessage;
-				String collName = ddpAddedToCollectionMessage.getCollection();
-				Map<String, Object> collection = mCollections.get(collName);
-				if (!mCollections.containsKey(collName)) {
-					// add new collection
-					LOGGER.finer("Added collection " + collName);
-					collection = new HashMap<>();
-					mCollections.put(collName, collection);
-				}
-				String id = ddpAddedToCollectionMessage.getId();
-				LOGGER.fine("Added docid " + id + " to collection " + collName);
-				collection.put(id, ddpAddedToCollectionMessage.getFields());
-				break;
-			case REMOVED:
-				DdpRemovedFromCollectionMessage ddpRemovedFromCollectionMessage = (DdpRemovedFromCollectionMessage) ddpClientMessage;
-				String removedCollectionName = ddpRemovedFromCollectionMessage.getCollection();
-				if (mCollections.containsKey(removedCollectionName)) {
-					// remove IDs from collection
-					Map<String, Object> removedCollection = mCollections.get(removedCollectionName);
-					String docId = ddpRemovedFromCollectionMessage.getId();
-					LOGGER.fine("Removed doc: " + docId);
-					removedCollection.remove(docId);
-				} else {
-					LOGGER.warning("Received invalid removed msg for collection " + removedCollectionName);
-				}
-				break;
-			case CHANGED:
-				// handle document updates
-				DdpChangedCollectionMessage ddpChangedCollectionMessage = (DdpChangedCollectionMessage) ddpClientMessage;
-				String changedCollectionName = ddpChangedCollectionMessage.getCollection();
-				if (mCollections.containsKey(changedCollectionName)) {
-					Map<String, Object> changedCollection = mCollections.get(changedCollectionName);
-					String docId = ddpChangedCollectionMessage.getId();
-					@SuppressWarnings("unchecked")
-					Map<String, Object> doc = (Map<String, Object>) changedCollection.get(docId);
-					if (doc != null) {
-						// take care of field updates
-						@SuppressWarnings("unchecked")
-						Map<String, Object> fields = (Map<String, Object>) ddpChangedCollectionMessage.getFields();
-						if (fields != null) {
-							for (Map.Entry<String, Object> field : fields.entrySet()) {
-								String fieldname = field.getKey();
-								doc.put(fieldname, field.getValue());
-							}
-						}
-						// take care of clearing fields
-						List<String> deletedFields = ddpChangedCollectionMessage.getDeletedFields();
-						for (String fieldname : deletedFields) {
-							if (doc.containsKey(fieldname)) {
-								doc.remove(fieldname);
-							}
-						}
-					}
-				} else {
-					LOGGER.warning("Received invalid changed msg for collection " + changedCollectionName);
-				}
-				break;
-			default:
-				break;
-			}
+	public void processMessage(IDdpCollectionMessage ddpCollectionMessage) {
+		if (ddpCollectionMessage instanceof DdpAddedToCollectionMessage) {
+			processMessage((DdpAddedToCollectionMessage) ddpCollectionMessage);
+		} else if (ddpCollectionMessage instanceof DdpRemovedFromCollectionMessage) {
+			processMessage((DdpRemovedFromCollectionMessage) ddpCollectionMessage);
+		} else if (ddpCollectionMessage instanceof DdpChangedCollectionMessage) {
+			processMessage((DdpChangedCollectionMessage) ddpCollectionMessage);
 		}
-		// TODO: handle addedBefore, movedBefore
-		// dumpMap(jsonFields);
 	}
 
 	/**
@@ -179,7 +172,7 @@ public class DdpTestClientListener implements IDdpAllListener {
 				resumeToken = (String) result.get("token");
 				userId = (String) result.get("id");
 				LOGGER.finer("Resume token: " + resumeToken + " for user " + userId);
-				ddpState = DdpState.LoggedIn;
+				ddpState = DdpState.LOGGED_IN;
 			}
 			ddpErrorField = ddpResultMessage.getError();
 			// TODO: save results for method calls
@@ -187,23 +180,9 @@ public class DdpTestClientListener implements IDdpAllListener {
 	}
 
 	@Override
-	public void onSubscriptionReady(String id) {
-		mReadySubscription = id;
-	}
-
-	@Override
-	public void onNoSub(DdpNoSubscriptionMessage ddpNoSubscriptionMessage) {
-		ddpErrorField = ddpNoSubscriptionMessage.getError();
-		if (ddpErrorField == null) {
-			// if there's no error, it just means a subscription was unsubscribed
-			mReadySubscription = null;
-		}
-	}
-
-	@Override
 	public void processMessage(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
 		if (ddpClientHeartbeatMessage instanceof DdpClientPongMessage) {
-			mPingId = ddpClientHeartbeatMessage.getId();
+			pingId = ddpClientHeartbeatMessage.getId();
 		}
 	}
 
@@ -211,14 +190,37 @@ public class DdpTestClientListener implements IDdpAllListener {
 	public void processMessage(IDdpClientConnectionMessage ddpClientConnectionMessage) {
 		if (ddpClientConnectionMessage instanceof DdpConnectedMessage) {
 			DdpConnectedMessage ddpConnectedMessage = (DdpConnectedMessage) ddpClientConnectionMessage;
-			ddpState = DdpState.Connected;
-			mSessionId = ddpConnectedMessage.getSession();
+			ddpState = DdpState.CONNECTED;
+			sessionId = ddpConnectedMessage.getSession();
 		} else if (ddpClientConnectionMessage instanceof DdpDisconnectedMessage) {
-			ddpState = DdpState.Closed;
+			ddpState = DdpState.CLOSED;
 			DdpDisconnectedMessage ddpDisconnectedMessage = (DdpDisconnectedMessage) ddpClientConnectionMessage;
-			mCloseCode = Integer.parseInt(ddpDisconnectedMessage.getCode());
-			mCloseReason = ddpDisconnectedMessage.getReason();
-			mCloseFromRemote = ddpDisconnectedMessage.getRemote();
+			closeCode = Integer.parseInt(ddpDisconnectedMessage.getCode());
+			closeReason = ddpDisconnectedMessage.getReason();
+			isClosedFromRemote = ddpDisconnectedMessage.getRemote();
 		}
+	}
+
+	@Override
+	public void processMessage(IDdpSubscriptionMessage ddpSubscriptionMessage) {
+		if (ddpSubscriptionMessage instanceof DdpSubscriptionReadyMessage) {
+			DdpSubscriptionReadyMessage ddpSubscriptionReadyMessage = (DdpSubscriptionReadyMessage) ddpSubscriptionMessage;
+			for (String id : ddpSubscriptionReadyMessage.getSubscriptionIds()) {
+				// Should be only one for this test
+				readySubscription = id;
+			}
+		} else if (ddpSubscriptionMessage instanceof DdpNoSubscriptionMessage) {
+			DdpNoSubscriptionMessage ddpNoSubscriptionMessage = (DdpNoSubscriptionMessage) ddpSubscriptionMessage;
+			ddpErrorField = ddpNoSubscriptionMessage.getError();
+			if (ddpErrorField == null) {
+				// if there's no error, it just means a subscription was unsubscribed
+				readySubscription = null;
+			}
+		}
+	}
+
+	@Override
+	public void processMessage(DdpTopLevelErrorMessage ddpTopLevelErrorMessage) {
+		this.ddpTopLevelErrorMessage = ddpTopLevelErrorMessage;
 	}
 }

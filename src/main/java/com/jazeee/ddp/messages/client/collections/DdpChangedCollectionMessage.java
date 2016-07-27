@@ -3,9 +3,7 @@ package com.jazeee.ddp.messages.client.collections;
 import java.util.Collections;
 import java.util.List;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
-
-public class DdpChangedCollectionMessage implements IDdpClientMessage {
+public class DdpChangedCollectionMessage implements IDdpCollectionMessage {
 	private final String collection;
 	private final String id;
 	private final Object fields;
