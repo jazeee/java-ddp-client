@@ -37,6 +37,7 @@ import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
 import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
+import com.jazeee.ddp.messages.client.methodCalls.IDdpMethodCallMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
 import com.keysolutions.ddpclient.DdpClient;
 
@@ -71,6 +72,7 @@ public class DdpTestClientListener implements IDdpAllListener {
 		ddpClient.addDDPListener(this);
 		ddpClient.addHeartbeatListener(this);
 		ddpClient.addConnectionListener(this);
+		ddpClient.addMethodCallListener(this);
 	}
 
 	@Override
@@ -163,30 +165,24 @@ public class DdpTestClientListener implements IDdpAllListener {
 	}
 
 	@Override
-	public void onResult(DdpMethodResultMessage ddpResultMessage) {
-		// NOTE: in normal usage, you'd add a listener per command, not a global one like this
-		// handle method data collection updated msg
-		String methodId = ddpResultMessage.getId();
-		if (methodId.equals("1") && ddpResultMessage.getResult() != null) {
-			@SuppressWarnings("unchecked")
-			Map<String, Object> result = (Map<String, Object>) ddpResultMessage.getResult();
-			// login method is always "1"
-			// REVIEW: is there a better way to figure out if it's a login result?
-			resumeToken = (String) result.get("token");
-			userId = (String) result.get("id");
-			LOGGER.finer("Resume token: " + resumeToken + " for user " + userId);
-			ddpState = DdpState.LoggedIn;
-		}
-		ddpErrorField = ddpResultMessage.getError();
-		// TODO: save results for method calls
-	}
-
-	@Override
-	public void onNoSub(DdpNoSubscriptionMessage ddpNoSubscriptionMessage) {
-		ddpErrorField = ddpNoSubscriptionMessage.getError();
-		if (ddpErrorField == null) {
-			// if there's no error, it just means a subscription was unsubscribed
-			mReadySubscription = null;
+	public void processMessage(IDdpMethodCallMessage ddpMethodCallMessage) {
+		if (ddpMethodCallMessage instanceof DdpMethodResultMessage) {
+			DdpMethodResultMessage ddpResultMessage = (DdpMethodResultMessage) ddpMethodCallMessage;
+			// NOTE: in normal usage, you'd add a listener per command, not a global one like this
+			// handle method data collection updated msg
+			String methodId = ddpResultMessage.getId();
+			if (methodId.equals("1") && ddpResultMessage.getResult() != null) {
+				@SuppressWarnings("unchecked")
+				Map<String, Object> result = (Map<String, Object>) ddpResultMessage.getResult();
+				// login method is always "1"
+				// REVIEW: is there a better way to figure out if it's a login result?
+				resumeToken = (String) result.get("token");
+				userId = (String) result.get("id");
+				LOGGER.finer("Resume token: " + resumeToken + " for user " + userId);
+				ddpState = DdpState.LoggedIn;
+			}
+			ddpErrorField = ddpResultMessage.getError();
+			// TODO: save results for method calls
 		}
 	}
 
@@ -196,7 +192,12 @@ public class DdpTestClientListener implements IDdpAllListener {
 	}
 
 	@Override
-	public void onUpdated(String callId) {
+	public void onNoSub(DdpNoSubscriptionMessage ddpNoSubscriptionMessage) {
+		ddpErrorField = ddpNoSubscriptionMessage.getError();
+		if (ddpErrorField == null) {
+			// if there's no error, it just means a subscription was unsubscribed
+			mReadySubscription = null;
+		}
 	}
 
 	@Override

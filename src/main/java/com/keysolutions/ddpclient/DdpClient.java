@@ -31,6 +31,7 @@ import com.jazeee.common.utils.WeakHashSet;
 import com.jazeee.ddp.listeners.IDdpAllListener;
 import com.jazeee.ddp.listeners.IDdpConnectionListener;
 import com.jazeee.ddp.listeners.IDdpHeartbeatListener;
+import com.jazeee.ddp.listeners.IDdpMethodCallListener;
 import com.jazeee.ddp.messages.DdpClientMessageType;
 import com.jazeee.ddp.messages.DdpClientMessages;
 import com.jazeee.ddp.messages.IDdpClientMessage;
@@ -40,6 +41,7 @@ import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
 import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodUpdatedMessage;
+import com.jazeee.ddp.messages.client.methodCalls.IDdpMethodCallMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpSubscriptionReadyMessage;
 import com.jazeee.ddp.messages.deserializers.GsonClientMessagesDeserializer;
@@ -54,7 +56,7 @@ import com.jazeee.ddp.messages.server.subscriptions.DdpUnSubscribeMessage;
  * Java Meteor DDP websocket client
  * 
  */
-public class DdpClient {
+public class DdpClient implements IDdpHeartbeatListener {
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
 	/** DDP connection state */
@@ -82,6 +84,7 @@ public class DdpClient {
 
 	private final Notifier<IDdpHeartbeatListener, IDdpClientHeartbeatMessage> heartbeatNotifier = new Notifier<>(new DdpClientHeartbeatNotificationProcessor());
 	private final Notifier<IDdpConnectionListener, IDdpClientConnectionMessage> connectionNotifier = new Notifier<>(new DdpConnectionNotificationProcessor());
+	private final Notifier<IDdpMethodCallListener, IDdpMethodCallMessage> methodCallNotifier = new Notifier<>(new DdpMethodCallNotificationProcessor());
 
 	/**
 	 * Instantiates a Meteor DDP client for the Meteor server located at the supplied IP and port (note: running Meteor locally will typically have a port of 3000 but port 80 is
@@ -96,6 +99,7 @@ public class DdpClient {
 	public DdpClient(String meteorServerIp, Integer meteorServerPort, boolean useSSL, Gson gson) throws URISyntaxException {
 		this.gson = gson;
 		initWebsocket(meteorServerIp, meteorServerPort, useSSL);
+		this.heartbeatNotifier.addListener(this);
 	}
 
 	/**
@@ -124,6 +128,7 @@ public class DdpClient {
 	public DdpClient(String meteorServerIp, Integer meteorServerPort, TrustManager[] trustManagers, Gson gson) throws URISyntaxException {
 		this.gson = gson;
 		initWebsocket(meteorServerIp, meteorServerPort, trustManagers);
+		this.heartbeatNotifier.addListener(this);
 	}
 
 	/**
@@ -568,15 +573,6 @@ public class DdpClient {
 				continue;
 			}
 			switch (ddpClientMessageType) {
-			case UPDATED:
-				List<String> methodIds = ((DdpMethodUpdatedMessage) ddpClientMessage).getMethods();
-				for (String methodId : methodIds) {
-					IDdpAllListener listener = messageListeners.get(methodId);
-					if (listener != null) {
-						listener.onUpdated(methodId);
-					}
-				}
-				break;
 			case READY:
 				List<String> subscriptionIds = ((DdpSubscriptionReadyMessage) ddpClientMessage).getSubscriptionIds();
 				for (String subscriptionId : subscriptionIds) {
@@ -600,15 +596,10 @@ public class DdpClient {
 				}
 				break;
 			case RESULT:
-				DdpMethodResultMessage ddpMethodResultMessage = (DdpMethodResultMessage) ddpClientMessage;
-				String methodCallId = ddpMethodResultMessage.getId();
-				if (methodCallId != null) {
-					IDdpAllListener listener = messageListeners.get(methodCallId);
-					if (listener != null) {
-						listener.onResult(ddpMethodResultMessage);
-						messageListeners.remove(methodCallId);
-					}
-				}
+				notifyMethodCallListeners((DdpMethodResultMessage) ddpClientMessage);
+				break;
+			case UPDATED:
+				notifyMethodCallListeners((DdpMethodUpdatedMessage) ddpClientMessage);
 				break;
 			case CONNECTED:
 				connectionState = ConnectionState.CONNECTED;
@@ -624,8 +615,6 @@ public class DdpClient {
 				break;
 			case PING:
 				DdpClientPingMessage ddpClientPingMessage = ((DdpClientPingMessage) ddpClientMessage);
-				// automatically send PONG command back to server
-				send(ddpClientPingMessage.createPongResponse());
 				notifyHeartbeatListeners(ddpClientPingMessage);
 				break;
 			case PONG:
@@ -674,5 +663,22 @@ public class DdpClient {
 
 	public void notifyConnectionListeners(IDdpClientConnectionMessage ddpClientConnectionMessage) {
 		this.connectionNotifier.notifyListeners(ddpClientConnectionMessage);
+	}
+
+	public void addMethodCallListener(IDdpMethodCallListener ddpMethodCallListener) {
+		this.methodCallNotifier.addListener(ddpMethodCallListener);
+	}
+
+	public void notifyMethodCallListeners(IDdpMethodCallMessage ddpMethodCallMessage) {
+		this.methodCallNotifier.notifyListeners(ddpMethodCallMessage);
+	}
+
+	@Override
+	public void processMessage(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
+		if (ddpClientHeartbeatMessage instanceof DdpClientPingMessage) {
+			// automatically send PONG command back to server
+			DdpClientPingMessage ddpClientPingMessage = (DdpClientPingMessage) ddpClientHeartbeatMessage;
+			send(ddpClientPingMessage.createPongResponse());
+		}
 	}
 }

@@ -1,9 +1,8 @@
 package com.jazeee.ddp.messages.client.methodCalls;
 
 import com.jazeee.ddp.messages.DdpErrorField;
-import com.jazeee.ddp.messages.IDdpClientMessage;
 
-public class DdpMethodResultMessage implements IDdpClientMessage {
+public class DdpMethodResultMessage implements IDdpMethodCallMessage {
 	private final String id;
 	private final DdpErrorField error;
 	private final Object result;

@@ -3,9 +3,7 @@ package com.jazeee.ddp.messages.client.methodCalls;
 import java.util.Collections;
 import java.util.List;
 
-import com.jazeee.ddp.messages.IDdpClientMessage;
-
-public class DdpMethodUpdatedMessage implements IDdpClientMessage {
+public class DdpMethodUpdatedMessage implements IDdpMethodCallMessage {
 	private final List<String> methods;
 
 	public DdpMethodUpdatedMessage() {
