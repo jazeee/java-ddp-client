@@ -8,7 +8,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -24,7 +23,6 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import com.google.gson.Gson;
 import com.jazeee.common.notifier.Notifier;
-import com.jazeee.ddp.listeners.IDdpAllListener;
 import com.jazeee.ddp.listeners.IDdpCollectionListener;
 import com.jazeee.ddp.listeners.IDdpConnectionListener;
 import com.jazeee.ddp.listeners.IDdpHeartbeatListener;
@@ -65,8 +63,6 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	private ConnectionState connectionState;
 	/** current command ID */
 	private AtomicLong currentMessageId;
-	/** callback tracking for DDP commands */
-	private Map<String, IDdpAllListener> messageListeners;
 	/** web socket client */
 	private WebSocketClient webSocketClient;
 	/** web socket address for reconnections */
@@ -209,7 +205,6 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 			meteorServerPort = 3000;
 		meteorServerIpAddress = (trustManagers != null ? "wss://" : "ws://") + meteorServerIp + ":" + meteorServerPort.toString() + "/websocket";
 		this.currentMessageId = new AtomicLong(0);
-		this.messageListeners = new ConcurrentHashMap<String, IDdpAllListener>();
 		createWsClient(meteorServerIpAddress);
 
 		this.trustManagers = trustManagers;
@@ -313,25 +308,8 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * 
 	 * @return DDP call ID
 	 */
-	private long nextId() {
-		return currentMessageId.incrementAndGet();
-	}
-
-	/**
-	 * Registers a client DDP command results callback listener
-	 * 
-	 * @param resultListener command results callback
-	 * @return ID for next command
-	 */
-	private String addCommmand(IDdpAllListener resultListener) {
-		if (resultListener != null) {
-			long id = nextId();
-			// store listener for callbacks
-			String idString = Long.toString(id);
-			messageListeners.put(idString, resultListener);
-			return idString;
-		}
-		return "";
+	private String getNextId() {
+		return Long.toString(currentMessageId.incrementAndGet());
 	}
 
 	/**
@@ -370,39 +348,12 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * 
 	 * @param method name of corresponding Meteor method
 	 * @param params arguments to be passed to the Meteor method
-	 * @param resultListener DDP command listener for this method call
 	 * @return ID for next command
 	 */
-	public String call(String method, Object[] params, IDdpAllListener resultListener) {
-		String id = addCommmand(resultListener);
+	public String callMethod(String method, Object[] params) {
+		String id = getNextId();
 		DdpMethodCallMessage ddpMethodCallMessage = new DdpMethodCallMessage(id, method, params);
 		send(ddpMethodCallMessage);
-		return id;
-	}
-
-	/**
-	 * Call a meteor method with the supplied parameters
-	 * 
-	 * @param method name of corresponding Meteor method
-	 * @param params arguments to be passed to the Meteor method
-	 * @return ID for next command
-	 */
-	public String call(String method, Object[] params) {
-		return call(method, params, null);
-	}
-
-	/**
-	 * Subscribe to a Meteor record set with the supplied parameters
-	 * 
-	 * @param name name of the corresponding Meteor subscription
-	 * @param params arguments corresponding to the Meteor subscription
-	 * @param resultListener DDP command listener for this call
-	 * @return ID for next command
-	 */
-	public String subscribe(String name, Object[] params, IDdpAllListener resultListener) {
-		String id = addCommmand(resultListener);
-		DdpSubscribeMessage ddpSubscribeMessage = new DdpSubscribeMessage(id, name, params);
-		send(ddpSubscribeMessage);
 		return id;
 	}
 
@@ -414,23 +365,10 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @return ID for next command
 	 */
 	public String subscribe(String name, Object[] params) {
-		return subscribe(name, params, null);
-	}
-
-	/**
-	 * If you have the subscription ID instead of the name, you can use this to unsubscribe
-	 * 
-	 * @param subId subscription ID from when you subscribed
-	 * @param resultListener result listener
-	 * @return ID for next command
-	 */
-	public String unsubscribe(String subId, IDdpAllListener resultListener) {
-		if (subId == null) {
-			subId = addCommmand(resultListener);
-		}
-		DdpUnSubscribeMessage ddpUnSubscribeMessage = new DdpUnSubscribeMessage(subId);
-		send(ddpUnSubscribeMessage);
-		return subId;
+		String id = getNextId();
+		DdpSubscribeMessage ddpSubscribeMessage = new DdpSubscribeMessage(id, name, params);
+		send(ddpSubscribeMessage);
+		return id;
 	}
 
 	/**
@@ -440,21 +378,9 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @return ID for next command
 	 */
 	public String unsubscribe(String subId) {
-		return unsubscribe(subId, null);
-	}
-
-	/**
-	 * Inserts document into collection from the client
-	 * 
-	 * @param collectionName Name of collection
-	 * @param insertParams Document fields
-	 * @param resultListener DDP command listener for this call
-	 * @return Returns command ID
-	 */
-	public String collectionInsert(String collectionName, Map<String, Object> insertParams, IDdpAllListener resultListener) {
-		Object[] collArgs = new Object[1];
-		collArgs[0] = insertParams;
-		return call("/" + collectionName + "/insert", collArgs);
+		DdpUnSubscribeMessage ddpUnSubscribeMessage = new DdpUnSubscribeMessage(subId);
+		send(ddpUnSubscribeMessage);
+		return subId;
 	}
 
 	/**
@@ -465,7 +391,9 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @return Returns command ID
 	 */
 	public String collectionInsert(String collectionName, Map<String, Object> insertParams) {
-		return collectionInsert(collectionName, insertParams, null);
+		Object[] collArgs = new Object[1];
+		collArgs[0] = insertParams;
+		return callMethod("/" + collectionName + "/insert", collArgs);
 	}
 
 	/**
@@ -473,37 +401,14 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * 
 	 * @param collectionName Name of collection
 	 * @param docId _id of document
-	 * @param resultListener Callback handler for command results
 	 * @return Returns command ID
 	 */
-	public String collectionDelete(String collectionName, String docId, IDdpAllListener resultListener) {
+	public String collectionDelete(String collectionName, String docId) {
 		Object[] collArgs = new Object[1];
 		Map<String, Object> selector = new HashMap<String, Object>();
 		selector.put("_id", docId);
 		collArgs[0] = selector;
-		return call("/" + collectionName + "/remove", collArgs);
-	}
-
-	public String collectionDelete(String collectionName, String docId) {
-		return collectionDelete(collectionName, docId, null);
-	}
-
-	/**
-	 * Updates a collection document from the client NOTE: for security reasons, you can only do this one document at a time.
-	 * 
-	 * @param collectionName Name of collection
-	 * @param docId _id of document
-	 * @param updateParams Map w/ mongoDB parameters to pass in for update
-	 * @param resultListener Callback handler for command results
-	 * @return Returns command ID
-	 */
-	public String collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams, IDdpAllListener resultListener) {
-		Map<String, Object> selector = new HashMap<String, Object>();
-		Object[] collArgs = new Object[2];
-		selector.put("_id", docId);
-		collArgs[0] = selector;
-		collArgs[1] = updateParams;
-		return call("/" + collectionName + "/update", collArgs);
+		return callMethod("/" + collectionName + "/remove", collArgs);
 	}
 
 	/**
@@ -515,21 +420,21 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @return Returns command ID
 	 */
 	public String collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams) {
-		return collectionUpdate(collectionName, docId, updateParams, null);
+		Map<String, Object> selector = new HashMap<String, Object>();
+		Object[] collArgs = new Object[2];
+		selector.put("_id", docId);
+		collArgs[0] = selector;
+		collArgs[1] = updateParams;
+		return callMethod("/" + collectionName + "/update", collArgs);
 	}
 
 	/**
 	 * Pings the server...you'll get a Pong message back in the DDPListener
 	 * 
 	 * @param pingId of ping message so you can tell if you have data loss
-	 * @param resultListener DDP command listener for this call
 	 */
-	public void ping(String pingId, IDdpAllListener resultListener) {
-		if (resultListener != null) {
-			messageListeners.put(pingId, resultListener);
-		}
-		DdpServerPingMessage ddpServerPingMessage = new DdpServerPingMessage(pingId);
-		send(ddpServerPingMessage);
+	public void ping(String pingId) {
+		send(new DdpServerPingMessage(pingId));
 	}
 
 	/**

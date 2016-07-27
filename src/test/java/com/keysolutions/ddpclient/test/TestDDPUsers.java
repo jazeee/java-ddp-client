@@ -69,7 +69,7 @@ public class TestDDPUsers extends TestCase {
 		// delete old user first in case this test has been run before
 		Object[] methodArgs = new Object[1];
 		methodArgs[0] = "test2@test.com";
-		ddp.call("deleteUser", methodArgs, obs);
+		ddp.callMethod("deleteUser", methodArgs);
 
 		// we need to wait a bit in case there was a deletion
 		Thread.sleep(500);
@@ -92,7 +92,7 @@ public class TestDDPUsers extends TestCase {
 		options.put("username", "test2@test.com");
 		options.put("email", "test2@test.com");
 		options.put("password", "1234");
-		ddp.call("createUser", methodArgs);
+		ddp.callMethod("createUser", methodArgs);
 
 		// we need to wait a bit for the insertion or error
 		Thread.sleep(500);

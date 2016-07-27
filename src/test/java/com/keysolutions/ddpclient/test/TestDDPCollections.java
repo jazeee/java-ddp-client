@@ -68,7 +68,7 @@ public class TestDDPCollections {
 		Object[] methodArgs = new Object[1];
 		EmailAuth emailpass = new EmailAuth(TestConstants.sMeteorUsername, TestConstants.sMeteorPassword);
 		methodArgs[0] = emailpass;
-		String methodId = ddp.call("login", methodArgs, obs);
+		String methodId = ddp.callMethod("login", methodArgs);
 		assertEquals("1", methodId); // first ID should be 1
 
 		// we should get a message back after a bit..make sure it's successful
@@ -94,7 +94,7 @@ public class TestDDPCollections {
 	@Test
 	public void testInvalidSubscription() throws Exception {
 		// test error handling for invalid subscription
-		ddp.subscribe("nosuchsubscription", new Object[] {}, obs);
+		ddp.subscribe("nosuchsubscription", new Object[] {});
 		// wait a bit to get an error
 		Thread.sleep(500);
 		// make sure we see the right error
@@ -110,13 +110,13 @@ public class TestDDPCollections {
 	@Test
 	public void testUnsubscribe() throws Exception {
 		// test error handling for invalid subscription
-		String subId = ddp.subscribe("testData", new Object[] {}, obs);
+		String subId = ddp.subscribe("testData", new Object[] {});
 		// wait a bit to get confirmation
 		Thread.sleep(500);
 		// make sure we see subscriptions
 		assertTrue(obs.readySubscription != null);
 		// test unsubscribe
-		ddp.unsubscribe(subId, obs);
+		ddp.unsubscribe(subId);
 		// wait a bit to get confirmation
 		Thread.sleep(500);
 		// make sure we see unsubscription
@@ -132,7 +132,7 @@ public class TestDDPCollections {
 	@Test
 	public void testCollectionCRUD() throws Exception {
 		// put collection in clean state
-		ddp.call("clearCollection", new Object[] {});
+		ddp.callMethod("clearCollection", new Object[] {});
 		// subscribe to TestCollection
 		ddp.subscribe("testData", new Object[] {});
 		// add a few documents to collection
@@ -141,10 +141,10 @@ public class TestDDPCollections {
 		options.put("value", "a");
 		options.put("docnum", 1);
 		methodArgs[0] = options;
-		ddp.call("addDoc", methodArgs);
+		ddp.callMethod("addDoc", methodArgs);
 		options.put("value", "b");
 		options.put("docnum", 2);
-		ddp.call("addDoc", methodArgs);
+		ddp.callMethod("addDoc", methodArgs);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(1000);
 		assertTrue(obs.collections.containsKey("TestCollection"));
@@ -163,14 +163,14 @@ public class TestDDPCollections {
 		String docId = docEntry.getKey();
 		options.put("value", "test");
 		options.put("id", docId);
-		ddp.call("updateDoc", methodArgs);
+		ddp.callMethod("updateDoc", methodArgs);
 		Thread.sleep(1000);
 		// verify doc was updated
 		coll = obs.collections.get("TestCollection");
 		Map<String, Object> doc = (Map<String, Object>) coll.get(docId);
 		assertEquals("test", doc.get("testfield"));
 		// delete a document
-		ddp.call("deleteDoc", methodArgs);
+		ddp.callMethod("deleteDoc", methodArgs);
 		Thread.sleep(1000);
 		// verify doc was deleted
 		assertEquals(1, obs.collections.get("TestCollection").size());
@@ -185,7 +185,7 @@ public class TestDDPCollections {
 	@Test
 	public void testLargeCollectionCRUD() throws Exception {
 		// put collection in clean state
-		ddp.call("clearCollection", new Object[] {});
+		ddp.callMethod("clearCollection", new Object[] {});
 		// subscribe to TestCollection
 		ddp.subscribe("testData", new Object[] {});
 		// add a few documents to collection
@@ -201,7 +201,7 @@ public class TestDDPCollections {
 		options.put("value", largeString);
 		options.put("docnum", 1);
 		methodArgs[0] = options;
-		ddp.call("addDoc", methodArgs);
+		ddp.callMethod("addDoc", methodArgs);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(1000);
 		assertTrue(obs.collections.containsKey("TestCollection"));
@@ -221,14 +221,14 @@ public class TestDDPCollections {
 		String docId = docEntry.getKey();
 		options.put("value", "test");
 		options.put("id", docId);
-		ddp.call("updateDoc", methodArgs);
+		ddp.callMethod("updateDoc", methodArgs);
 		Thread.sleep(1000);
 		// verify doc was updated
 		coll = obs.collections.get("TestCollection");
 		Map<String, Object> doc = (Map<String, Object>) coll.get(docId);
 		assertEquals("test", doc.get("testfield"));
 		// delete a document
-		ddp.call("deleteDoc", methodArgs);
+		ddp.callMethod("deleteDoc", methodArgs);
 		Thread.sleep(1000);
 		// verify doc was deleted
 		assertEquals(0, obs.collections.get("TestCollection").size());
@@ -243,7 +243,7 @@ public class TestDDPCollections {
 	@Test
 	public void testClientSideUpdate() throws Exception {
 		// put collection in clean state
-		ddp.call("clearCollection", new Object[] {});
+		ddp.callMethod("clearCollection", new Object[] {});
 		// subscribe to TestCollection
 		ddp.subscribe("testData", new Object[] {});
 		// add a doc to collection
@@ -254,7 +254,7 @@ public class TestDDPCollections {
 		options.put("userid", obs.userId);
 		// you need to specify the _id if you're creating doc on client
 		options.put("_id", UUID.randomUUID().toString());
-		ddp.collectionInsert("TestCollection", options, obs);
+		ddp.collectionInsert("TestCollection", options);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
 		assertTrue(obs.collections.containsKey("TestCollection"));
@@ -268,7 +268,7 @@ public class TestDDPCollections {
 		Map<String, Object> setOptions = new HashMap<String, Object>();
 		setOptions.put("testfield", "hello");
 		options.put("$set", setOptions);
-		ddp.collectionUpdate("TestCollection", docId, options, obs);
+		ddp.collectionUpdate("TestCollection", docId, options);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
 		// verify that collection got updated
@@ -276,7 +276,7 @@ public class TestDDPCollections {
 		Map<String, Object> doc = (Map<String, Object>) coll.get(docId);
 		assertEquals("hello", doc.get("testfield"));
 		// try to do a delete
-		ddp.collectionDelete("TestCollection", docId, obs);
+		ddp.collectionDelete("TestCollection", docId);
 		// verify that the collection is now empty
 		Thread.sleep(500);
 		assertEquals(0, obs.collections.get("TestCollection").size());
@@ -296,7 +296,7 @@ public class TestDDPCollections {
 		}
 
 		// put collection in clean state
-		ddp.call("clearCollection", new Object[] {});
+		ddp.callMethod("clearCollection", new Object[] {});
 		// subscribe to TestCollection
 		ddp.subscribe("testData", new Object[] {});
 		// add a doc to collection
@@ -307,7 +307,7 @@ public class TestDDPCollections {
 		options.put("userid", obs.userId);
 		// you need to specify the _id if you're creating doc on client
 		options.put("_id", UUID.randomUUID().toString());
-		ddp.collectionInsert("TestCollection", options, obs);
+		ddp.collectionInsert("TestCollection", options);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
 		assertTrue(obs.collections.containsKey("TestCollection"));
@@ -321,12 +321,12 @@ public class TestDDPCollections {
 		options.clear();
 		options.put("id", docId);
 		options.put("value", "hello");
-		ddp.call("addField", new Object[] { options });
+		ddp.callMethod("addField", new Object[] { options });
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
 		assertEquals("hello", doc.get("newfield"));
 		// check that field deleted on server deletes it in local doc
-		ddp.call("deleteField", new Object[] { options });
+		ddp.callMethod("deleteField", new Object[] { options });
 		// wait a bit to get delete field sync'd back down
 		Thread.sleep(500);
 		assertNull(doc.get("newfield"));

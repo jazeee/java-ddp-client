@@ -138,7 +138,7 @@ public class TestDDPConnections extends TestCase {
 
 		// send a ping and verify we got a pong back
 		assertTrue(obs.pingId == null);
-		ddp.ping("ping1", obs);
+		ddp.ping("ping1");
 		Thread.sleep(500);
 		assertNotNull(obs.pingId);
 		assertTrue(obs.pingId.equals("ping1"));

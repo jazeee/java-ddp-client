@@ -68,7 +68,7 @@ public class TestDDPAuth extends TestCase {
 		Object[] methodArgs = new Object[1];
 		EmailAuth emailpass = new EmailAuth("invalid@invalid.com", "password");
 		methodArgs[0] = emailpass;
-		String methodId = ddp.call("login", methodArgs, obs);
+		String methodId = ddp.callMethod("login", methodArgs);
 		assertEquals("1", methodId); // first ID should be 1
 		Thread.sleep(500);
 		assertTrue(obs.ddpState == DdpState.CONNECTED);
@@ -105,7 +105,7 @@ public class TestDDPAuth extends TestCase {
 		Object[] methodArgs = new Object[1];
 		EmailAuth emailpass = new EmailAuth("invalid@invalid.com", "password");
 		methodArgs[0] = emailpass;
-		String methodId = ddp.call("login", methodArgs, obs);
+		String methodId = ddp.callMethod("login", methodArgs);
 		assertEquals("1", methodId); // first ID should be 1
 		Thread.sleep(500);
 		assertTrue(obs.ddpState == DdpState.CONNECTED);
@@ -143,7 +143,7 @@ public class TestDDPAuth extends TestCase {
 		Object[] methodArgs = new Object[1];
 		EmailAuth emailpass = new EmailAuth(TestConstants.sMeteorUsername, TestConstants.sMeteorPassword);
 		methodArgs[0] = emailpass;
-		String methodId = ddp.call("login", methodArgs, obs);
+		String methodId = ddp.callMethod("login", methodArgs);
 		assertEquals("1", methodId); // first ID should be 1
 
 		// we should get a message back after a bit..make sure it's successful
@@ -167,7 +167,7 @@ public class TestDDPAuth extends TestCase {
 
 		TokenAuth token = new TokenAuth(resumeToken);
 		methodArgs[0] = token;
-		methodId = ddp.call("login", methodArgs, obs);
+		methodId = ddp.callMethod("login", methodArgs);
 		assertEquals("1", methodId); // first ID should be 1
 		Thread.sleep(500);
 		assertTrue(obs.ddpState == DdpState.LOGGED_IN);
