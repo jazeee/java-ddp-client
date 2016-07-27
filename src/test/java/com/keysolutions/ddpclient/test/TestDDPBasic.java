@@ -53,7 +53,7 @@ public class TestDDPBasic extends TestCase {
 		Method method = DdpClient.class.getDeclaredMethod("handleError", Exception.class);
 		method.setAccessible(true);
 		method.invoke(ddp, new Exception("ignore exception"));
-		assertEquals("WebSocketClient", obs.ddpTopLevelErrorMessage.getSource());
-		assertEquals("ignore exception", obs.ddpTopLevelErrorMessage.getErrorMessage());
+		assertEquals("WebSocketClient", obs.ddpTopLevelErrorMessage.getJavaSource());
+		assertEquals("ignore exception", obs.ddpTopLevelErrorMessage.getReason());
 	}
 }

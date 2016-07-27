@@ -3,15 +3,13 @@ package com.jazeee.ddp.messages;
 public class DdpTopLevelErrorMessage implements IDdpClientMessage {
 	private final String reason;
 	private final String offendingMessage;
-	private final String source;
-	private final String errormsg;
+	private final String javaSource;
 
 	public DdpTopLevelErrorMessage() {
 		super();
 		this.reason = "";
 		this.offendingMessage = "";
-		this.source = "";
-		this.errormsg = "";
+		this.javaSource = "";
 	}
 
 	public String getReason() {
@@ -22,12 +20,8 @@ public class DdpTopLevelErrorMessage implements IDdpClientMessage {
 		return offendingMessage;
 	}
 
-	public String getSource() {
-		return source;
-	}
-
-	public String getErrorMessage() {
-		return errormsg;
+	public String getJavaSource() {
+		return javaSource;
 	}
 
 	@Override
@@ -37,10 +31,8 @@ public class DdpTopLevelErrorMessage implements IDdpClientMessage {
 		builder.append(reason);
 		builder.append(", offendingMessage=");
 		builder.append(offendingMessage);
-		builder.append(", source=");
-		builder.append(source);
-		builder.append(", errormsg=");
-		builder.append(errormsg);
+		builder.append(", javaSource=");
+		builder.append(javaSource);
 		builder.append("]");
 		return builder.toString();
 	}

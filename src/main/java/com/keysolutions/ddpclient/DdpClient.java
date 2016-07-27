@@ -294,11 +294,11 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 */
 	private void handleError(Exception ex) {
 		// changed formatting to always return a JSON object
-		String errmsg = ex.getMessage();
-		if (errmsg == null) {
-			errmsg = "Unknown websocket error (exception in callback?)";
+		String reason = ex.getMessage();
+		if (reason == null) {
+			reason = "Unknown websocket error (exception in callback?)";
 		}
-		String errorMsg = "{\"msg\":\"error\",\"source\":\"WebSocketClient\",\"errormsg\":\"" + errmsg + "\"}";
+		String errorMsg = "{\"msg\":\"error\",\"javaSource\":\"WebSocketClient\",\"reason\":\"" + reason + "\"}";
 		log.debug("{}", errorMsg);
 		onReceived(errorMsg);
 	}
