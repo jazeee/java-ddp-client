@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.keysolutions.ddpclient.DDPClient;
-import com.keysolutions.ddpclient.test.DDPTestClientObserver.DDPSTATE;
+import com.keysolutions.ddpclient.test.DdpTestClientListener.DdpState;
 
 import junit.framework.TestCase;
 
@@ -55,14 +55,14 @@ public class TestDDPUsers extends TestCase {
 		// TODO: does this belong inside the Java DDP client?
 		// create DDP client instance and hook testobserver to it
 		DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
-		DDPTestClientObserver obs = new DDPTestClientObserver();
+		DdpTestClientListener obs = new DdpTestClientListener();
 		ddp.addDDPListener(obs);
 		// make connection to Meteor server
 		ddp.connect();
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Connected);
+		assertTrue(obs.mDdpState == DdpState.Connected);
 
 		// subscribe to user collection
 		ddp.subscribe("users", new Object[] {});

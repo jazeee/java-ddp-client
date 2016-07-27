@@ -1,6 +1,6 @@
 package com.jazeee.ddp.listeners;
 
-import java.util.Map;
+import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
 
 public interface IDDPMethodListener {
 
@@ -9,7 +9,7 @@ public interface IDDPMethodListener {
 	 * 
 	 * @param resultFields returned results from method call
 	 */
-	public abstract void onResult(Map<String, Object> resultFields);
+	public abstract void onResult(DdpMethodResultMessage ddpResultMessage);
 
 	/**
 	 * Callback for method's "updated" event

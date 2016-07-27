@@ -1,10 +1,11 @@
 package com.jazeee.ddp.messages.client.subscriptions;
 
+import com.jazeee.ddp.messages.DdpErrorField;
 import com.jazeee.ddp.messages.IDdpClientMessage;
 
 public class DdpNoSubscriptionMessage implements IDdpClientMessage {
 	private final String id;
-	private final Error error;
+	private final DdpErrorField error;
 
 	public DdpNoSubscriptionMessage() {
 		super();
@@ -16,7 +17,7 @@ public class DdpNoSubscriptionMessage implements IDdpClientMessage {
 		return id;
 	}
 
-	public Error getError() {
+	public DdpErrorField getError() {
 		return error;
 	}
 

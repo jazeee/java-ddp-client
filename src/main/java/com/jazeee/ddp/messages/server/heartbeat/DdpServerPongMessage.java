@@ -6,9 +6,9 @@ import com.jazeee.ddp.messages.server.AbstractDdpServerMessage;
 public class DdpServerPongMessage extends AbstractDdpServerMessage {
 	private final String id;
 
-	public DdpServerPongMessage() {
+	public DdpServerPongMessage(String id) {
 		super();
-		this.id = "";
+		this.id = id;
 	}
 
 	@Override

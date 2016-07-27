@@ -7,10 +7,11 @@ import com.jazeee.ddp.messages.client.collections.DdpMovedBeforeCollectionMessag
 import com.jazeee.ddp.messages.client.collections.DdpRemovedFromCollectionMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectFailedMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
+import com.jazeee.ddp.messages.client.connection.DdpDisconnectedMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPingMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
+import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodUpdatedMessage;
-import com.jazeee.ddp.messages.client.methodCalls.DdpResultMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpSubscriptionReadyMessage;
 import com.jazeee.utils.JazeeeStringUtils;
@@ -20,8 +21,9 @@ public enum DdpClientMessageType {
 	// Connection status
 	CONNECTED(DdpConnectedMessage.class), 
 	FAILED(DdpConnectFailedMessage.class),
+	CLOSED(DdpDisconnectedMessage.class),
 	// Method calls
-	RESULT(DdpResultMessage.class),
+	RESULT(DdpMethodResultMessage.class),
 	UPDATED(DdpMethodUpdatedMessage.class),
 	// Subscriptions
 	READY(DdpSubscriptionReadyMessage.class),
@@ -35,6 +37,8 @@ public enum DdpClientMessageType {
 	// Heartbeat
 	PING(DdpClientPingMessage.class), 
 	PONG(DdpClientPongMessage.class),
+	// Error
+	ERROR(DdpTopLevelErrorMessage.class),
 	;
 	//@formatter:on
 	private final String ddpKey;

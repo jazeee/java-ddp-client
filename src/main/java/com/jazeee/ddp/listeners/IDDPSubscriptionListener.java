@@ -1,6 +1,6 @@
 package com.jazeee.ddp.listeners;
 
-import java.util.Map;
+import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
 
 public interface IDDPSubscriptionListener {
 
@@ -11,12 +11,6 @@ public interface IDDPSubscriptionListener {
 	 */
 	public abstract void onSubscriptionReady(String callId);
 
-	/**
-	 * Callback for invalid subscription name errors
-	 * 
-	 * @param callId method call ID
-	 * @param errorFields fields holding error info
-	 */
-	public abstract void onNoSub(String callId, Map<String, Object> errorFields);
+	void onNoSub(DdpNoSubscriptionMessage ddpNoSubscriptionMessage);
 
 }

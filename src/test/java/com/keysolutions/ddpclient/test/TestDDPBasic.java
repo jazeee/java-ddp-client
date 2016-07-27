@@ -48,7 +48,7 @@ public class TestDDPBasic extends TestCase {
 	 */
 	public void testHandleError() throws Exception {
 		DDPClient ddp = new DDPClient("", 0);
-		DDPTestClientObserver obs = new DDPTestClientObserver();
+		DdpTestClientListener obs = new DdpTestClientListener();
 		ddp.addDDPListener(obs);
 		// do this convoluted thing to test a private method
 		Method method = DDPClient.class.getDeclaredMethod("handleError", Exception.class);

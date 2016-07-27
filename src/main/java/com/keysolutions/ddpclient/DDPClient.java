@@ -6,7 +6,6 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,8 +28,17 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import com.google.gson.Gson;
 import com.jazeee.ddp.listeners.IDDPListener;
+import com.jazeee.ddp.messages.DdpClientMessageType;
 import com.jazeee.ddp.messages.DdpClientMessages;
+import com.jazeee.ddp.messages.IDdpClientMessage;
+import com.jazeee.ddp.messages.client.heartbeat.DdpClientPingMessage;
+import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
+import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
+import com.jazeee.ddp.messages.client.methodCalls.DdpMethodUpdatedMessage;
+import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
+import com.jazeee.ddp.messages.client.subscriptions.DdpSubscriptionReadyMessage;
 import com.jazeee.ddp.messages.deserializers.GsonClientMessagesDeserializer;
+import com.jazeee.ddp.messages.server.IDdpServerMessage;
 import com.jazeee.ddp.messages.server.connection.DdpConnectMessage;
 import com.jazeee.ddp.messages.server.heartbeat.DdpServerPingMessage;
 import com.jazeee.ddp.messages.server.methodCalls.DdpMethodCallMessage;
@@ -300,7 +308,7 @@ public class DDPClient {
 		log.trace("WebSocket connection opened");
 		// reply to Meteor server with connection confirmation message ({"msg":
 		// "connect"})
-		sendJson(new DdpConnectMessage().toJson());
+		send(new DdpConnectMessage());
 		// we'll get a msg:connected from the Meteor server w/ a session ID when we connect
 		// note that this may return an error that the DDP protocol isn't correct
 	}
@@ -403,7 +411,7 @@ public class DDPClient {
 	public String call(String method, Object[] params, IDDPListener resultListener) {
 		String id = addCommmand(resultListener);
 		DdpMethodCallMessage ddpMethodCallMessage = new DdpMethodCallMessage(id, method, params);
-		sendJson(ddpMethodCallMessage.toJson());
+		send(ddpMethodCallMessage);
 		return id;
 	}
 
@@ -429,7 +437,7 @@ public class DDPClient {
 	public String subscribe(String name, Object[] params, IDDPListener resultListener) {
 		String id = addCommmand(resultListener);
 		DdpSubscribeMessage ddpSubscribeMessage = new DdpSubscribeMessage(id, name, params);
-		sendJson(ddpSubscribeMessage.toJson());
+		send(ddpSubscribeMessage);
 		return id;
 	}
 
@@ -456,7 +464,7 @@ public class DDPClient {
 			subId = addCommmand(resultListener);
 		}
 		DdpUnSubscribeMessage ddpUnSubscribeMessage = new DdpUnSubscribeMessage(subId);
-		sendJson(ddpUnSubscribeMessage.toJson());
+		send(ddpUnSubscribeMessage);
 		return subId;
 	}
 
@@ -556,7 +564,7 @@ public class DDPClient {
 			messageListeners.put(pingId, resultListener);
 		}
 		DdpServerPingMessage ddpServerPingMessage = new DdpServerPingMessage(pingId);
-		sendJson(ddpServerPingMessage.toJson());
+		send(ddpServerPingMessage);
 	}
 
 	/**
@@ -567,6 +575,10 @@ public class DDPClient {
 	public void send(Map<String, Object> msgParams) {
 		String json = gson.toJson(msgParams);
 		sendJson(json);
+	}
+
+	public void send(IDdpServerMessage ddpServerMessage) {
+		sendJson(ddpServerMessage.toJson());
 	}
 
 	private void sendJson(String json) {
@@ -588,83 +600,86 @@ public class DDPClient {
 		log.debug("Received response: {}...", jsonMessage.substring(0, Math.min(1000, jsonMessage.length())));
 		Gson gson = GsonClientMessagesDeserializer.getGsonConverter();
 		DdpClientMessages ddpClientMessages = gson.fromJson(jsonMessage, DdpClientMessages.class);
-		// generic object deserialization is from
-		// http://programmerbruce.blogspot.com/2011/06/gson-v-jackson.html
-		@SuppressWarnings("unchecked")
-		Map<String, Object> jsonFields = gson.fromJson(jsonMessage, HashMap.class);
-
-		// notify any command listeners if we get updated or result msgs
-		String msgtype = (String) jsonFields.get(DdpMessageField.MSG);
-		if (msgtype == null) {
-			// ignore {"server_id":"GqrKrbcSeDfTYDkzQ"} web socket msgs
-			return;
-		}
-		if (msgtype.equals(DdpMessageType.UPDATED)) {
-			@SuppressWarnings("unchecked")
-			List<String> methodIds = (ArrayList<String>) jsonFields.get(DdpMessageField.METHODS);
-			for (String methodId : methodIds) {
-				IDDPListener listener = messageListeners.get(methodId);
-				if (listener != null) {
-					listener.onUpdated(methodId);
+		for (DdpClientMessageType ddpClientMessageType : ddpClientMessages.keySet()) {
+			IDdpClientMessage ddpClientMessage = ddpClientMessages.get(ddpClientMessageType);
+			if (ddpClientMessageType == null) {
+				// ignore {"server_id":"GqrKrbcSeDfTYDkzQ"} web socket msgs
+				continue;
+			}
+			switch (ddpClientMessageType) {
+			case UPDATED:
+				List<String> methodIds = ((DdpMethodUpdatedMessage) ddpClientMessage).getMethods();
+				for (String methodId : methodIds) {
+					IDDPListener listener = messageListeners.get(methodId);
+					if (listener != null) {
+						listener.onUpdated(methodId);
+					}
 				}
-			}
-		} else if (msgtype.equals(DdpMessageType.READY)) {
-			@SuppressWarnings("unchecked")
-			List<String> subscriptionIds = (ArrayList<String>) jsonFields.get(DdpMessageField.SUBS);
-			for (String subscriptionId : subscriptionIds) {
-				IDDPListener listener = messageListeners.get(subscriptionId);
-				if (listener != null) {
-					listener.onSubscriptionReady(subscriptionId);
+				break;
+			case READY:
+				List<String> subscriptionIds = ((DdpSubscriptionReadyMessage) ddpClientMessage).getSubscriptionIds();
+				for (String subscriptionId : subscriptionIds) {
+					IDDPListener listener = messageListeners.get(subscriptionId);
+					if (listener != null) {
+						listener.onSubscriptionReady(subscriptionId);
+					}
 				}
-			}
-		} else if (msgtype.equals(DdpMessageType.NOSUB)) {
-			String msgId = (String) jsonFields.get(DdpMessageField.ID);
-			if (msgId == null) {
-				log.warn("No such subscription ID found!");
-			} else {
-				IDDPListener listener = messageListeners.get(msgId);
-				if (listener != null) {
-					@SuppressWarnings("unchecked")
-					Map<String, Object> errorFields = (Map<String, Object>) jsonFields.get(DdpMessageField.ERROR);
-					listener.onNoSub(msgId, errorFields);
-					messageListeners.remove(msgId);
+				break;
+			case NOSUB:
+				DdpNoSubscriptionMessage ddpNoSubscriptionMessage = (DdpNoSubscriptionMessage) ddpClientMessage;
+				String noSubscriptionMessageId = ddpNoSubscriptionMessage.getId();
+				if (noSubscriptionMessageId == null) {
+					log.warn("No such subscription ID found!");
+				} else {
+					IDDPListener listener = messageListeners.get(noSubscriptionMessageId);
+					if (listener != null) {
+						listener.onNoSub(ddpNoSubscriptionMessage);
+						messageListeners.remove(noSubscriptionMessageId);
+					}
 				}
-			}
-		} else if (msgtype.equals(DdpMessageType.RESULT)) {
-			String msgId = (String) jsonFields.get(DdpMessageField.ID);
-			if (msgId != null) {
-				IDDPListener listener = messageListeners.get(msgId);
-				if (listener != null) {
-					listener.onResult(jsonFields);
-					messageListeners.remove(msgId);
+				break;
+			case RESULT:
+				DdpMethodResultMessage ddpMethodResultMessage = (DdpMethodResultMessage) ddpClientMessage;
+				String methodCallId = ddpMethodResultMessage.getId();
+				if (methodCallId != null) {
+					IDDPListener listener = messageListeners.get(methodCallId);
+					if (listener != null) {
+						listener.onResult(ddpMethodResultMessage);
+						messageListeners.remove(methodCallId);
+					}
 				}
+				break;
+			case CONNECTED:
+				connectionState = CONNSTATE.Connected;
+				break;
+			case CLOSED:
+				connectionState = CONNSTATE.Closed;
+				break;
+			case PING:
+				DdpClientPingMessage ddpClientPingMessage = ((DdpClientPingMessage) ddpClientMessage);
+				// automatically send PONG command back to server
+				send(ddpClientPingMessage.createPongResponse());
+				break;
+			case PONG:
+				DdpClientPongMessage ddpClientPongMessage = ((DdpClientPongMessage) ddpClientMessage);
+				String pingId = ddpClientPongMessage.getId();
+				// let listeners know a Pong happened
+				IDDPListener listener = messageListeners.get(pingId);
+				if (listener != null) {
+					listener.onPong(pingId);
+					messageListeners.remove(pingId);
+				}
+				break;
+			case ERROR:
+				log.error("{}", ddpClientMessage);
+				break;
+			default:
+				log.warn("Ignorming message type: {}", ddpClientMessageType);
+				break;
 			}
-		} else if (msgtype.equals(DdpMessageType.CONNECTED)) {
-			connectionState = CONNSTATE.Connected;
-		} else if (msgtype.equals(DdpMessageType.CLOSED)) {
-			connectionState = CONNSTATE.Closed;
-		} else if (msgtype.equals(DdpMessageType.PING)) {
-			String pongId = (String) jsonFields.get(DdpMessageField.ID);
-			// automatically send PONG command back to server
-			Map<String, Object> pongMsg = new HashMap<String, Object>();
-			pongMsg.put(DdpMessageField.MSG, DdpMessageType.PONG);
-			if (pongId != null) {
-				pongMsg.put(DdpMessageField.ID, pongId);
-			}
-			send(pongMsg);
-		} else if (msgtype.equals(DdpMessageType.PONG)) {
-			String pingId = (String) jsonFields.get(DdpMessageField.ID);
-			// let listeners know a Pong happened
-			IDDPListener listener = messageListeners.get(pingId);
-			if (listener != null) {
-				listener.onPong(pingId);
-				messageListeners.remove(pingId);
-			}
-		} else {
-			log.warn("Ignorming message type: {}", msgtype);
 		}
 		for (IDDPListener ddpListener : ddpListeners) {
-			ddpListener.onDDPMessage(jsonFields);
+			ddpListener.onDdpMessage(ddpClientMessages);
 		}
 	}
 

@@ -1,33 +1,48 @@
 package com.jazeee.ddp.messages;
 
-public class DdpErrorMessage {
+import org.apache.commons.lang3.math.NumberUtils;
+
+public class DdpErrorField {
 	private final String error;
 	private final String reason;
+	private final String message;
 	private final String details;
-	private final String offendingMessage;
+	private final String errorType;
 
-	public DdpErrorMessage(String error) {
+	public DdpErrorField(String error) {
 		super();
 		this.error = error;
-		this.reason = null;
-		this.details = null;
-		this.offendingMessage = null;
+		this.reason = "";
+		this.message = "";
+		this.details = "";
+		this.errorType = "";
 	}
 
 	public String getError() {
 		return error;
 	}
 
+	public long getErrorCodeIfPossible() {
+		if (NumberUtils.isNumber(error)) {
+			return Math.round(Double.parseDouble(error));
+		}
+		return -1;
+	}
+
 	public String getReason() {
 		return reason;
+	}
+
+	public String getMessage() {
+		return message;
 	}
 
 	public String getDetails() {
 		return details;
 	}
 
-	public String getOffendingMessage() {
-		return offendingMessage;
+	public String getErrorType() {
+		return errorType;
 	}
 
 	@Override

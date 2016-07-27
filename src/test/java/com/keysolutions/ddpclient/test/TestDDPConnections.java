@@ -22,7 +22,7 @@ import java.net.URISyntaxException;
 import junit.framework.TestCase;
 
 import com.keysolutions.ddpclient.DDPClient;
-import com.keysolutions.ddpclient.test.DDPTestClientObserver.DDPSTATE;
+import com.keysolutions.ddpclient.test.DdpTestClientListener.DdpState;
 
 public class TestDDPConnections extends TestCase {
 
@@ -45,7 +45,7 @@ public class TestDDPConnections extends TestCase {
 	 */
 	public void testConnectionClosed() throws Exception {
 		DDPClient ddp = new DDPClient("", 0);
-		DDPTestClientObserver obs = new DDPTestClientObserver();
+		DdpTestClientListener obs = new DdpTestClientListener();
 		ddp.addDDPListener(obs);
 		// do this convoluted thing to test a private method
 		Method method = DDPClient.class.getDeclaredMethod("connectionClosed", int.class, String.class, boolean.class);
@@ -65,21 +65,21 @@ public class TestDDPConnections extends TestCase {
 	public void testDisconnect() throws URISyntaxException, InterruptedException {
 		// create DDP client instance and hook testobserver to it
 		DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
-		DDPTestClientObserver obs = new DDPTestClientObserver();
+		DdpTestClientListener obs = new DdpTestClientListener();
 		ddp.addDDPListener(obs);
 		// make connection to Meteor server
 		ddp.connect();
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Connected);
+		assertTrue(obs.mDdpState == DdpState.Connected);
 
 		// try disconnect
 		ddp.disconnect();
 
 		// wait a bit to make sure our state has changed to closed
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Closed);
+		assertTrue(obs.mDdpState == DdpState.Closed);
 	}
 
 	/**
@@ -91,35 +91,35 @@ public class TestDDPConnections extends TestCase {
 	public void testReconnect() throws URISyntaxException, InterruptedException {
 		// create DDP client instance and hook testobserver to it
 		DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
-		DDPTestClientObserver obs = new DDPTestClientObserver();
+		DdpTestClientListener obs = new DdpTestClientListener();
 		ddp.addDDPListener(obs);
 		// make connection to Meteor server
 		ddp.connect();
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Connected);
+		assertTrue(obs.mDdpState == DdpState.Connected);
 
 		// try disconnect
 		ddp.disconnect();
 
 		// wait a bit to make sure our state has changed to closed
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Closed);
+		assertTrue(obs.mDdpState == DdpState.Closed);
 
 		// now test that we can reconnect to the server
 		ddp.connect();
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Connected);
+		assertTrue(obs.mDdpState == DdpState.Connected);
 
 		// try disconnect
 		ddp.disconnect();
 
 		// wait a bit to make sure our state has changed to closed
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Closed);
+		assertTrue(obs.mDdpState == DdpState.Closed);
 	}
 
 	/**
@@ -131,14 +131,14 @@ public class TestDDPConnections extends TestCase {
 	public void testPing() throws URISyntaxException, InterruptedException {
 		// create DDP client instance and hook testobserver to it
 		DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
-		DDPTestClientObserver obs = new DDPTestClientObserver();
+		DdpTestClientListener obs = new DdpTestClientListener();
 		ddp.addDDPListener(obs);
 		// make connection to Meteor server
 		ddp.connect();
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Connected);
+		assertTrue(obs.mDdpState == DdpState.Connected);
 
 		// send a ping and verify we got a pong back
 		assertTrue(obs.mPingId == null);
@@ -152,7 +152,7 @@ public class TestDDPConnections extends TestCase {
 
 		// wait a bit to make sure our state has changed to closed
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Closed);
+		assertTrue(obs.mDdpState == DdpState.Closed);
 	}
 
 	/**
@@ -169,14 +169,14 @@ public class TestDDPConnections extends TestCase {
 
 		// create DDP client instance and hook testobserver to it
 		DDPClient ddp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, true);
-		DDPTestClientObserver obs = new DDPTestClientObserver();
+		DdpTestClientListener obs = new DdpTestClientListener();
 		ddp.addDDPListener(obs);
 		// make connection to Meteor server
 		ddp.connect();
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(obs.mDdpState == DDPSTATE.Connected);
+		assertTrue(obs.mDdpState == DdpState.Connected);
 
 		// try disconnect
 		ddp.disconnect();

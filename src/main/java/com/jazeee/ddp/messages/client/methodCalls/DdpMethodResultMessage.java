@@ -1,13 +1,14 @@
 package com.jazeee.ddp.messages.client.methodCalls;
 
+import com.jazeee.ddp.messages.DdpErrorField;
 import com.jazeee.ddp.messages.IDdpClientMessage;
 
-public class DdpResultMessage implements IDdpClientMessage {
+public class DdpMethodResultMessage implements IDdpClientMessage {
 	private final String id;
-	private final Error error;
+	private final DdpErrorField error;
 	private final Object result;
 
-	public DdpResultMessage() {
+	public DdpMethodResultMessage() {
 		super();
 		this.id = "";
 		this.error = null;
@@ -18,7 +19,7 @@ public class DdpResultMessage implements IDdpClientMessage {
 		return id;
 	}
 
-	public Error getError() {
+	public DdpErrorField getError() {
 		return error;
 	}
 

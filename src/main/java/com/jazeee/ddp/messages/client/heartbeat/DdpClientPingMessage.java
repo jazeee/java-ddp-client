@@ -1,6 +1,7 @@
 package com.jazeee.ddp.messages.client.heartbeat;
 
 import com.jazeee.ddp.messages.IDdpClientMessage;
+import com.jazeee.ddp.messages.server.heartbeat.DdpServerPongMessage;
 
 public class DdpClientPingMessage implements IDdpClientMessage {
 	private final String id;
@@ -12,6 +13,10 @@ public class DdpClientPingMessage implements IDdpClientMessage {
 
 	public String getId() {
 		return id;
+	}
+
+	public DdpServerPongMessage createPongResponse() {
+		return new DdpServerPongMessage(id);
 	}
 
 	@Override

@@ -1,7 +1,7 @@
 package com.jazeee.ddp.listeners;
 
-import java.util.Map;
+import com.jazeee.ddp.messages.DdpClientMessages;
 
 public interface IDDPListener extends IDDPHeartbeatListener, IDDPMethodListener, IDDPCollectionListener, IDDPSubscriptionListener {
-	public void onDDPMessage(Map<String, Object> jsonFields);
+	public void onDdpMessage(DdpClientMessages ddpClientMessages);
 }

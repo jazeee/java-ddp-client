@@ -3,7 +3,7 @@ package com.jazeee.ddp.messages.server;
 import com.google.gson.Gson;
 import com.jazeee.ddp.messages.DdpServerMessageType;
 
-public abstract class AbstractDdpServerMessage {
+public abstract class AbstractDdpServerMessage implements IDdpServerMessage {
 	private final String msg;
 
 	protected abstract DdpServerMessageType getDdpServerMessageType();
@@ -13,6 +13,7 @@ public abstract class AbstractDdpServerMessage {
 		this.msg = getDdpServerMessageType().getDdpKey();
 	}
 
+	@Override
 	public String toJson() {
 		return new Gson().toJson(this);
 	}

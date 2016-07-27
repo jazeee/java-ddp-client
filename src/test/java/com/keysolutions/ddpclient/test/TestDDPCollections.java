@@ -32,7 +32,7 @@ import org.junit.Test;
 
 import com.jazeee.ddp.auth.EmailAuth;
 import com.keysolutions.ddpclient.DDPClient;
-import com.keysolutions.ddpclient.test.DDPTestClientObserver.DDPSTATE;
+import com.keysolutions.ddpclient.test.DdpTestClientListener.DdpState;
 
 /**
  * Tests for collections
@@ -41,7 +41,7 @@ import com.keysolutions.ddpclient.test.DDPTestClientObserver.DDPSTATE;
  */
 public class TestDDPCollections {
 	private DDPClient mDdp;
-	private DDPTestClientObserver mObs;
+	private DdpTestClientListener mObs;
 	public final static String NEWLINE_SEPARATOR = System.getProperty("line.separator");
 
 	@Before
@@ -50,14 +50,14 @@ public class TestDDPCollections {
 
 		// create DDP client instance and hook testobserver to it
 		mDdp = new DDPClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
-		mObs = new DDPTestClientObserver();
+		mObs = new DdpTestClientListener();
 		mDdp.addDDPListener(mObs);
 		// make connection to Meteor server
 		mDdp.connect();
 
 		// we need to wait a bit before the socket is opened but make sure it's successful
 		Thread.sleep(500);
-		assertTrue(mObs.mDdpState == DDPSTATE.Connected);
+		assertTrue(mObs.mDdpState == DdpState.Connected);
 
 		// [password: passwordstring,
 		// user: {
@@ -76,7 +76,7 @@ public class TestDDPCollections {
 		// we should get a message back after a bit..make sure it's successful
 		// we need to grab the "token" from the result for the next test
 		Thread.sleep(500);
-		assertTrue(mObs.mDdpState == DDPSTATE.LoggedIn);
+		assertTrue(mObs.mDdpState == DdpState.LoggedIn);
 
 		// verify that we have the user in the users collection after login
 		assertTrue(mObs.mCollections.get("users").size() == 1);
