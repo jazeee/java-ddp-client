@@ -1,4 +1,4 @@
-package com.jazeee.ddp.client;
+package com.jazeee.ddp.client.notificationProcessors;
 
 import com.jazeee.common.notifier.INotificationProcessor;
 import com.jazeee.common.utils.nullability.NotNull;

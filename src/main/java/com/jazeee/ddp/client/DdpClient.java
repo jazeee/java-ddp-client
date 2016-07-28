@@ -23,6 +23,12 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import com.google.gson.Gson;
 import com.jazeee.common.notifier.Notifier;
+import com.jazeee.ddp.client.notificationProcessors.DdpClientHeartbeatNotificationProcessor;
+import com.jazeee.ddp.client.notificationProcessors.DdpCollectionNotificationProcessor;
+import com.jazeee.ddp.client.notificationProcessors.DdpConnectionNotificationProcessor;
+import com.jazeee.ddp.client.notificationProcessors.DdpMethodCallNotificationProcessor;
+import com.jazeee.ddp.client.notificationProcessors.DdpSubscriptionNotificationProcessor;
+import com.jazeee.ddp.client.notificationProcessors.DdpTopLevelErrorNotificationProcessor;
 import com.jazeee.ddp.listeners.IDdpCollectionListener;
 import com.jazeee.ddp.listeners.IDdpConnectionListener;
 import com.jazeee.ddp.listeners.IDdpHeartbeatListener;
