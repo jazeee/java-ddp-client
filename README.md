@@ -3,10 +3,23 @@ Meteor.js Java DDP Client
 
 Origins/Acknowledgements
 ------------------------
-This is a fork and fairly big fleshing out of [Peter Kutrumbos' 
-DDP Client](https://github.com/kutrumbo/java-ddp-client).
+This is a fork and significant rewrite out of [Key Yee's DDP Client](https://github.com/kenyee/java-ddp-client),
+which is a fork and fairly big fleshing out of [Peter Kutrumbos' DDP Client](https://github.com/kutrumbo/java-ddp-client).
 
-Differences include:
+Differences from kenyee:
+* Switched to POJO models
+* Upgrade to match Meteor 1.3.5.1 and up
+* Fix thread safety
+* Significant refactor to Java 1.7 standards
+* Added Subscribe functionality and notify-listener pattern for DDP messages.
+* Separate message type listeners to allow consumer to focus on desired functionality
+   * Heartbeat listener (client ping/pong messages)
+   * Connection listener (Connect/disconnect messages)
+   * Method call response listener (result of method call messages)
+   * Meteor Subscribe listener (Subscription response messages)
+   * Collection listener (Changes to collections messages)
+
+Differences from kutrumbo:
 
 * switched to using Gradle for builds to remove duplicated Websocket 
   and Gson libraries from source code
@@ -32,8 +45,8 @@ for testing, such as `accounts-password` and `insecure`.
 Download this [Meteor project](https://github.com/kenyee/meteor-test-ddp-endpoint)
 and run Meteor. Then run `gradle test` to verify that the tests pass.
 
-The DDPTestClientObserver in the JUnit tests is the core handler of DDP message 
-results and is a simple example of holding enough state to implement a simple 
+The TestDDPConnections is a good example of how you can listen and handle message responses 
+and is a simple example of holding enough state to implement a simple 
 Meteor client.  Note that in a real application, you'll probably want to use an 
 eventbus to implement the DDP message handling.
 
@@ -43,7 +56,7 @@ you'll have to have separate SortedMap collection for each of your sorts.
 
 If you're planning to use this with Android, look at the 
 [Android DDP Library](https://github.com/kenyee/android-ddp-client)
-which builds on top of this library
+which builds on top of kenyee's library
 to make it easier to work with an Android application.
 
 If you see this error:
@@ -51,13 +64,13 @@ If you see this error:
     Origin 1: C:\Users\you\.gradle\caches\artifacts-23\filestore\junit\junit\4.11\jar\4e031bb61df09069aeb2bffb4019e7a5034a4ee0\junit-4.11.jar
     Origin 2: C:\Users\you\.gradle\caches\artifacts-23\filestore\org.hamcrest\hamcrest-core\1.3\jar\42a25dc3219429f0e5d060061f71acb49bf010a0\hamcrest-core-1.3.jar
 delete the LICENSE.txt from one of those jar files using "zip -d".  This is a bug in
-Eclipse's Gradle plugin.
+Eclipse's Gradle plugin. Upgrade to [Gradle's Buildship](https://projects.eclipse.org/projects/tools.buildship)
 
 Design
 ------
-The Map&lt;String,Object> data type is used extensively; this is an interface 
-so a ConcurrentHashMap or LinkedHashmap is used underneath.  It's a reasonable Java 
-analogue to Javascripts's associative arrays.  Google's GSON library is used to convert 
+This package uses immutable messages to help ensure thread safety. All messages can be considered
+as immutable, although some may contain mutable Collections.
+This package uses Google's GSON library to convert 
 JSON to maps and ArrayLists (used for arrays of strings or objects).  
 
 One important thing to note is that integer values are always represented as 
@@ -71,20 +84,10 @@ Javascript's callback handling is done using Java's Observer/Listener pattern,
 which is what most users are familiar with if they've used any of the JDK UI
 frameworks.  When issuing a DDP command, you can attach a listener by creating one
 and then overriding any methods you want to handle:
-
-	ddp.call("login", params, new DDPListener() {
-		@Override
-		void onResult(Map<String, Object> resultFields) {
-			if (resultFields.containsKey(DdpMessageField.ERROR)) {
-				Map<String, Object> error = (Map<String, Object>) resultFields.get(DdpMessageField.ERROR);
-				errorReason = (String) error.get("reason");
-				System.err.println("Login failure: " + errorReason);
-			} else {
-				loggedIn = true;
-			}
-		}
-	});
-
+```Java
+ddp.addConnectionListener(ddpConnectionListener);
+ddp.addCollectionListener(ddpCollectionListener);
+```
 
 DDP Protocol Version
 --------------------
@@ -95,35 +98,21 @@ Maven Artifact
 This library is in the Maven Central Library hosted by Sonatype.
 In Gradle, you can reference it with this in your dependencies:
 
-    compile group: 'com.keysolutions', name: 'java-ddp-client', version: '1.0.0.+'
+    compile group: 'com.jazeee', name: 'java-ddp-client', version: '2.0.0.+'
 
 And in Maven, you can reference it with this:
 
     <dependency>
-      <groupId>com.keysolutions</groupId>
+      <groupId>com.jazeee</groupId>
       <artifactId>java-ddp-client</artifactId>
-      <version>1.0.0.4</version>
+      <version>2.0.0.0</version>
       <type>pom</type>
     </dependency>
 
-The version of the library will match the Meteor.js DDP protocol version with the 
-library revision in the last digit (0.5.7.1, 0.5.7.2, etc.)
-
-* 0.5.7.2 - switched to SLF4J logging library instead of using java.util.Logging
-* 0.5.7.3 - added disconnect() method
-* 0.5.7.4 - fix Maven dynamic version syntax
-* 0.5.7.5 - retargeted to JDK 1.5 so Mac OSX users won't have problem linking
-* 0.5.7.6 - add unit tests for add/delete field
-* 1.0.0.0 - added ping/pong support and bumped version to match Meteor's DDP version
-* 1.0.0.1 - fix SSL support so it uses Java's default trusted CA certs
-* 1.0.0.2 - fix trustmanager SSL handling when reconnecting; added ability to pass in trustmanager; add reconnect unit test
-* 1.0.0.3 - update to Apache Commons 4; add custom Gson constructor
-* 1.0.0.4 - add unsubscribe by ID method to complement unsubscribe by name
+* 2.0.0.0 - Significant rewrite and redesign
 
 To-Do
 -----
-* Add SRP (using Nimbus SRP library?) and OAuth login support.
 * Add "create new user" test.
 * Test all possible EJSON data types.
-* Handle insertBefore and insertAfter collection update messages (may be 
-difficult because LinkedHashMap can only append) when Meteor adds them.
+* Handle addBefore and addAfter collection update messages
