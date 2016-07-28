@@ -4,6 +4,7 @@ apply plugin: 'signing'
 apply plugin: 'maven'
 
 group = 'com.jazeee'
+archivesBaseName = 'ddp-client'
 version = '2.0.0.0'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
@@ -33,7 +34,6 @@ task sourcesJar(type: Jar) {
     classifier = 'sources'
 }
 
-
 repositories {
     mavenCentral()
 }
@@ -58,9 +58,13 @@ test {
 uploadArchives {
     repositories.mavenDeployer {
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
- 
+        logger.error("Using 'ossrhUsername' {} and 'ossrhPassword' (hidden) for Nexus auth.", ossrhUsername)
         repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-            authentication(userName: sonatypeUsername, password: sonatypePassword)
+            authentication(userName: ossrhUsername, password: ossrhPassword)
+        }
+        
+        snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+            authentication(userName: ossrhUsername, password: ossrhPassword)
         }
         
         pom.project {

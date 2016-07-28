@@ -21,7 +21,7 @@ Differences from kenyee:
 
 Differences from kutrumbo:
 
-* switched to using Gradle for builds to remove duplicated Websocket 
+* switched to using Gradle for builds to remove duplicated Websocket
   and Gson libraries from source code
 * added JUnit testing for all the DDP messages/results and auth/collections
 * returns DDP command results and removes handlers when done
@@ -36,25 +36,25 @@ Differences from kutrumbo:
 
 Usage
 -----
-The best thing to do is to look at the JUnit tests.  The tests are separated 
+The best thing to do is to look at the JUnit tests.  The tests are separated
 into authentication tests and collection tests.  
 
 To run the tests, you will need to run a Meteor application that has some packages
 for testing, such as `accounts-password` and `insecure`.
 
-Download this [Meteor project](https://github.com/kenyee/meteor-test-ddp-endpoint)
+Download this [Meteor project](https://github.com/jazeee/meteor-test-ddp-endpoint)
 and run Meteor. Then run `gradle test` to verify that the tests pass.
 
-The TestDDPConnections is a good example of how you can listen and handle message responses 
-and is a simple example of holding enough state to implement a simple 
-Meteor client.  Note that in a real application, you'll probably want to use an 
+The TestDDPConnections is a good example of how you can listen and handle message responses
+and is a simple example of holding enough state to implement a simple
+Meteor client.  Note that in a real application, you'll probably want to use an
 eventbus to implement the DDP message handling.
 
-Note that you may want to use a local SQLite DB to store the data instead of using 
+Note that you may want to use a local SQLite DB to store the data instead of using
 Maps if you are memory constrained and/or if you need to do any sorting.  Otherwise,
 you'll have to have separate SortedMap collection for each of your sorts.
 
-If you're planning to use this with Android, look at the 
+If you're planning to use this with Android, look at the
 [Android DDP Library](https://github.com/kenyee/android-ddp-client)
 which builds on top of kenyee's library
 to make it easier to work with an Android application.
@@ -70,12 +70,12 @@ Design
 ------
 This package uses immutable messages to help ensure thread safety. All messages can be considered
 as immutable, although some may contain mutable Collections.
-This package uses Google's GSON library to convert 
+This package uses Google's GSON library to convert
 JSON to maps and ArrayLists (used for arrays of strings or objects).  
 
-One important thing to note is that integer values are always represented as 
-Doubles in JSON so that's how they're translated by the GSON library.  If you're 
-sending numbers to Meteor, note that they will be sent as Doubles and what 
+One important thing to note is that integer values are always represented as
+Doubles in JSON so that's how they're translated by the GSON library.  If you're
+sending numbers to Meteor, note that they will be sent as Doubles and what
 you get back from Meteor as numbers show up as Doubles.  This isn't an issue in
 Javascript because it will autoconvert objects to the needed datatype, but Java
 is strongly typed, so you have to do the conversions yourself.
@@ -97,18 +97,20 @@ Maven Artifact
 --------------
 This library is in the Maven Central Library hosted by Sonatype.
 In Gradle, you can reference it with this in your dependencies:
-
-    compile group: 'com.jazeee', name: 'java-ddp-client', version: '2.0.0.+'
-
+```gradle
+compile group: 'com.jazeee', name: 'ddp-client', version: '2.0.0.+'
+```
 And in Maven, you can reference it with this:
-
-    <dependency>
-      <groupId>com.jazeee</groupId>
-      <artifactId>java-ddp-client</artifactId>
-      <version>2.0.0.0</version>
-      <type>pom</type>
-    </dependency>
-
+```maven
+<dependency>
+	<groupId>com.jazeee</groupId>
+	<artifactId>ddp-client</artifactId>
+	<version>2.0.0.0</version>
+	<type>pom</type>
+</dependency>
+```
+Changes
+-------
 * 2.0.0.0 - Significant rewrite and redesign
 
 To-Do
