@@ -31,7 +31,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.jazeee.ddp.auth.EmailAuth;
-import com.jazeee.ddp.client.DdpClient;
 import com.jazeee.ddp.client.DdpTestClientListener.DdpState;
 
 /**
@@ -49,7 +48,7 @@ public class TestDDPCollections {
 		System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
 
 		// create DDP client instance and hook testobserver to it
-		ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		obs = new DdpTestClientListener(ddp);
 		ddp.connect();
 

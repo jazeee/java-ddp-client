@@ -16,12 +16,10 @@
 
 package com.jazeee.ddp.client;
 
-import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 
 import junit.framework.TestCase;
 
-import com.jazeee.ddp.client.DdpClient;
 import com.jazeee.ddp.client.DdpTestClientListener.DdpState;
 
 public class TestDDPConnections extends TestCase {
@@ -39,17 +37,14 @@ public class TestDDPConnections extends TestCase {
 	}
 
 	/**
-	 * Verifies connection closed callback handler works (doesn't require a connection)
+	 * Verifies connection closed callback handler works
 	 * 
 	 * @throws Exception
 	 */
 	public void testConnectionClosed() throws Exception {
-		DdpClient ddp = new DdpClient("", 0);
+		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
-		// do this convoluted thing to test a private method
-		Method method = DdpClient.class.getDeclaredMethod("connectionClosed", int.class, String.class, boolean.class);
-		method.setAccessible(true);
-		method.invoke(ddp, 5, "test", true);
+		ddp.connectionClosed(5, "test", true);
 		assertEquals(5, obs.closeCode);
 		assertEquals("test", obs.closeReason);
 		assertEquals(true, obs.isClosedFromRemote);
@@ -63,7 +58,7 @@ public class TestDDPConnections extends TestCase {
 	 */
 	public void testDisconnect() throws URISyntaxException, InterruptedException {
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
 		ddp.connect();
@@ -88,7 +83,7 @@ public class TestDDPConnections extends TestCase {
 	 */
 	public void testReconnect() throws URISyntaxException, InterruptedException {
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
 		ddp.connect();
@@ -127,7 +122,7 @@ public class TestDDPConnections extends TestCase {
 	 */
 	public void testPing() throws URISyntaxException, InterruptedException {
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
 		ddp.connect();

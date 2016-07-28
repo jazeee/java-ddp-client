@@ -20,7 +20,6 @@ import junit.framework.TestCase;
 
 import com.jazeee.ddp.auth.EmailAuth;
 import com.jazeee.ddp.auth.TokenAuth;
-import com.jazeee.ddp.client.DdpClient;
 import com.jazeee.ddp.client.DdpTestClientListener.DdpState;
 
 /**
@@ -49,7 +48,7 @@ public class TestDDPAuth extends TestCase {
 	 */
 	public void testBadLogin() throws Exception {
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		ddp.connect();
 
@@ -85,7 +84,7 @@ public class TestDDPAuth extends TestCase {
 	 */
 	public void testBadPassword() throws Exception {
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
 		ddp.connect();
@@ -123,7 +122,7 @@ public class TestDDPAuth extends TestCase {
 	public void testLogin() throws Exception {
 		// TODO: does this belong inside the Java DDP client?
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
 		ddp.connect();
@@ -156,7 +155,7 @@ public class TestDDPAuth extends TestCase {
 
 		// // test out resume token
 		String resumeToken = obs.resumeToken;
-		ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
 		ddp.connect();

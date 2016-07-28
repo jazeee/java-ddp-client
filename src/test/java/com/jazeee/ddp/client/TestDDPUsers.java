@@ -25,7 +25,6 @@ import java.util.Map.Entry;
 
 import junit.framework.TestCase;
 
-import com.jazeee.ddp.client.DdpClient;
 import com.jazeee.ddp.client.DdpTestClientListener.DdpState;
 
 /**
@@ -55,7 +54,7 @@ public class TestDDPUsers extends TestCase {
 	public void testCreateUser() throws URISyntaxException, InterruptedException {
 		// TODO: does this belong inside the Java DDP client?
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort);
+		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		ddp.connect();
 
