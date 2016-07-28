@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.keysolutions.ddpclient.test;
+package com.jazeee.ddp.client;
 
 public final class TestConstants {
 	// Specify location of Meteor server (assumes it is running locally)

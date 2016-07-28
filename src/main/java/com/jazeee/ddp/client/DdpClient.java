@@ -1,4 +1,4 @@
-package com.keysolutions.ddpclient;
+package com.jazeee.ddp.client;
 
 import java.net.URI;
 import java.net.URISyntaxException;

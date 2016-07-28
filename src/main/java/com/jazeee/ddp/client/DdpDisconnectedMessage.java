@@ -1,4 +1,4 @@
-package com.keysolutions.ddpclient;
+package com.jazeee.ddp.client;
 
 import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
 

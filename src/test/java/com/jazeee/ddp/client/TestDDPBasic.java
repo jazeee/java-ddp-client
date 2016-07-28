@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.keysolutions.ddpclient.test;
+package com.jazeee.ddp.client;
 
 import java.lang.reflect.Method;
 
 import junit.framework.TestCase;
 
-import com.keysolutions.ddpclient.DdpClient;
+import com.jazeee.ddp.client.DdpClient;
 
 /**
  * Test misc basic methods in DDP client

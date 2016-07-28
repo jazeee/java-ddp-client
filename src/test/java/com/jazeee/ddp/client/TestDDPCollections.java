@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.keysolutions.ddpclient.test;
+package com.jazeee.ddp.client;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -31,8 +31,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.jazeee.ddp.auth.EmailAuth;
-import com.keysolutions.ddpclient.DdpClient;
-import com.keysolutions.ddpclient.test.DdpTestClientListener.DdpState;
+import com.jazeee.ddp.client.DdpClient;
+import com.jazeee.ddp.client.DdpTestClientListener.DdpState;
 
 /**
  * Tests for collections

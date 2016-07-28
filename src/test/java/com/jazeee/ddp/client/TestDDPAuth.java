@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.keysolutions.ddpclient.test;
+package com.jazeee.ddp.client;
 
 import junit.framework.TestCase;
 
 import com.jazeee.ddp.auth.EmailAuth;
 import com.jazeee.ddp.auth.TokenAuth;
-import com.keysolutions.ddpclient.DdpClient;
-import com.keysolutions.ddpclient.test.DdpTestClientListener.DdpState;
+import com.jazeee.ddp.client.DdpClient;
+import com.jazeee.ddp.client.DdpTestClientListener.DdpState;
 
 /**
  * Tests for authentication

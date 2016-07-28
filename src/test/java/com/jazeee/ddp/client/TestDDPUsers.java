@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.keysolutions.ddpclient.test;
+package com.jazeee.ddp.client;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -25,8 +25,8 @@ import java.util.Map.Entry;
 
 import junit.framework.TestCase;
 
-import com.keysolutions.ddpclient.DdpClient;
-import com.keysolutions.ddpclient.test.DdpTestClientListener.DdpState;
+import com.jazeee.ddp.client.DdpClient;
+import com.jazeee.ddp.client.DdpTestClientListener.DdpState;
 
 /**
  * Test creation of Meteor users

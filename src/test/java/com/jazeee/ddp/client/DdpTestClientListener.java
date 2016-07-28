@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.keysolutions.ddpclient.test;
+package com.jazeee.ddp.client;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
+import com.jazeee.ddp.client.DdpClient;
+import com.jazeee.ddp.client.DdpDisconnectedMessage;
 import com.jazeee.ddp.listeners.IDdpAllListener;
 import com.jazeee.ddp.messages.DdpErrorField;
 import com.jazeee.ddp.messages.DdpTopLevelErrorMessage;
@@ -38,8 +40,6 @@ import com.jazeee.ddp.messages.client.methodCalls.IDdpMethodCallMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpSubscriptionReadyMessage;
 import com.jazeee.ddp.messages.client.subscriptions.IDdpSubscriptionMessage;
-import com.keysolutions.ddpclient.DdpClient;
-import com.keysolutions.ddpclient.DdpDisconnectedMessage;
 
 /**
  * @author kenyee
