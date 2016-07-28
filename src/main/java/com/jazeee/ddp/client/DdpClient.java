@@ -30,7 +30,6 @@ import com.jazeee.ddp.messages.DdpClientMessages;
 import com.jazeee.ddp.messages.DdpTopLevelErrorMessage;
 import com.jazeee.ddp.messages.IDdpClientMessage;
 import com.jazeee.ddp.messages.client.collections.IDdpCollectionMessage;
-import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
 import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPingMessage;
 import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
@@ -48,7 +47,7 @@ import com.jazeee.ddp.messages.server.subscriptions.DdpUnSubscribeMessage;
  * Java Meteor DDP websocket client
  * 
  */
-public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener, IDdpTopLevelErrorListener, IDdpClient, Closeable {
+public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListener, IDdpClient, Closeable {
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 	private final AtomicLong currentMessageId = new AtomicLong(0);
 	private final String serverIpAddress;
@@ -87,7 +86,6 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		this.ddpWebSocketClientAtomicReference = new AtomicReference<>();
 		this.connectionState = new AtomicReference<>();
 		this.heartbeatNotifier.addListener(this);
-		this.connectionNotifier.addListener(this);
 		connectToWebSocketClient();
 	}
 
@@ -116,6 +114,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 				}
 				ddpWebSocketClientAtomicReference.get().connect();
 			} catch (IOException | DeploymentException | URISyntaxException e) {
+				log.error("Unable to connect", e);
 				throw new UnableToConnectException(e);
 			}
 		}
@@ -159,6 +158,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	public void onConnectionClosed(int code, String reason, boolean isDisconnectedByRemote) {
 		DdpDisconnectedMessage ddpDisconnectedMessage = new DdpDisconnectedMessage(Integer.toString(code), reason, isDisconnectedByRemote);
 		log.debug("Java client closed: {}", ddpDisconnectedMessage);
+		connectionState.set(ConnectionState.CLOSED);
 		notifyConnectionListeners(ddpDisconnectedMessage);
 	}
 
@@ -315,6 +315,11 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 				// ignore {"server_id":"GqrKrbcSeDfTYDkzQ"} web socket msgs
 				continue;
 			}
+			if (ddpClientMessageType.equals(DdpClientMessageType.CONNECTED)) {
+				connectionState.set(ConnectionState.CONNECTED);
+			} else if (ddpClientMessageType.equals(DdpClientMessageType.FAILED)) {
+				connectionState.set(ConnectionState.CLOSED);
+			}
 			switch (ddpClientMessageType) {
 			case CONNECTED:
 			case FAILED:
@@ -410,15 +415,6 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 			// automatically send PONG command back to server
 			DdpClientPingMessage ddpClientPingMessage = (DdpClientPingMessage) ddpClientHeartbeatMessage;
 			send(ddpClientPingMessage.createPongResponse());
-		}
-	}
-
-	@Override
-	public void processMessage(IDdpClientConnectionMessage ddpClientConnectionMessage) {
-		if (ddpClientConnectionMessage instanceof DdpConnectedMessage) {
-			connectionState.set(ConnectionState.CONNECTED);
-		} else {
-			connectionState.set(ConnectionState.CLOSED);
 		}
 	}
 

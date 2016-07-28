@@ -48,7 +48,7 @@ public class TestDDPAuth extends TestCase {
 	 */
 	public void testBadLogin() throws Exception {
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
+		DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		ddp.connect();
 
@@ -84,7 +84,7 @@ public class TestDDPAuth extends TestCase {
 	 */
 	public void testBadPassword() throws Exception {
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
+		DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
 		ddp.connect();
@@ -122,7 +122,7 @@ public class TestDDPAuth extends TestCase {
 	public void testLogin() throws Exception {
 		// TODO: does this belong inside the Java DDP client?
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
+		DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
 		ddp.connect();
@@ -140,7 +140,7 @@ public class TestDDPAuth extends TestCase {
 		// resume: resumetoken (no password required)
 		// }]
 		Object[] methodArgs = new Object[1];
-		EmailAuth emailpass = new EmailAuth(TestConstants.sMeteorUsername, TestConstants.sMeteorPassword);
+		EmailAuth emailpass = new EmailAuth(TestConstants.meteorUsername, TestConstants.meteorPassword);
 		methodArgs[0] = emailpass;
 		String methodId = ddp.callMethod("login", methodArgs);
 		assertEquals("1", methodId); // first ID should be 1
@@ -155,7 +155,7 @@ public class TestDDPAuth extends TestCase {
 
 		// // test out resume token
 		String resumeToken = obs.resumeToken;
-		ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
+		ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, false);
 		obs = new DdpTestClientListener(ddp);
 		// make connection to Meteor server
 		ddp.connect();

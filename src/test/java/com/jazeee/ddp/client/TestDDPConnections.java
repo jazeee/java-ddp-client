@@ -17,16 +17,56 @@
 package com.jazeee.ddp.client;
 
 import java.net.URISyntaxException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
 
-import com.jazeee.ddp.client.DdpTestClientListener.DdpState;
+import com.jazeee.ddp.client.DdpClient.ConnectionState;
+import com.jazeee.ddp.listeners.IDdpConnectionListener;
+import com.jazeee.ddp.listeners.IDdpHeartbeatListener;
+import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
+import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
+import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
+import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
 
 public class TestDDPConnections extends TestCase {
+	private IDdpConnectionListener ddpConnectionListener;
+	private IDdpHeartbeatListener ddpHeartbeatListener;
+	private CountDownLatch connectCountDownLatch;
+	private CountDownLatch disconnectCountDownLatch;
+	private CountDownLatch pingCountDownLatch;
+	private IDdpClientConnectionMessage ddpClientConnectionMessage;
+	private IDdpClientHeartbeatMessage ddpClientHeartbeatMessage;
 
 	@Override
 	protected void setUp() throws Exception {
 		System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
+		ddpConnectionListener = new IDdpConnectionListener() {
+			@Override
+			public void processMessage(IDdpClientConnectionMessage ddpClientConnectionMessage) {
+				TestDDPConnections.this.ddpClientConnectionMessage = ddpClientConnectionMessage;
+				if (ddpClientConnectionMessage instanceof DdpConnectedMessage) {
+					if (connectCountDownLatch != null) {
+						connectCountDownLatch.countDown();
+					}
+				}
+				if (ddpClientConnectionMessage instanceof DdpDisconnectedMessage) {
+					if (disconnectCountDownLatch != null) {
+						disconnectCountDownLatch.countDown();
+					}
+				}
+			}
+		};
+		ddpHeartbeatListener = new IDdpHeartbeatListener() {
+			@Override
+			public void processMessage(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
+				TestDDPConnections.this.ddpClientHeartbeatMessage = ddpClientHeartbeatMessage;
+				if (connectCountDownLatch != null) {
+					connectCountDownLatch.countDown();
+				}
+			}
+		};
 
 		super.setUp();
 	}
@@ -42,12 +82,16 @@ public class TestDDPConnections extends TestCase {
 	 * @throws Exception
 	 */
 	public void testConnectionClosed() throws Exception {
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
-		DdpTestClientListener obs = new DdpTestClientListener(ddp);
-		ddp.onConnectionClosed(5, "test", true);
-		assertEquals(5, obs.closeCode);
-		assertEquals("test", obs.closeReason);
-		assertEquals(true, obs.isClosedFromRemote);
+		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, TestConstants.isSSL)) {
+			ddp.addConnectionListener(ddpConnectionListener);
+			disconnectCountDownLatch = new CountDownLatch(1);
+			ddp.onConnectionClosed(5, "test", true);
+			disconnectCountDownLatch.await(10, TimeUnit.MILLISECONDS);
+			DdpDisconnectedMessage ddpDisconnectedMessage = (DdpDisconnectedMessage) ddpClientConnectionMessage;
+			assertEquals("5", ddpDisconnectedMessage.getCode());
+			assertEquals("test", ddpDisconnectedMessage.getReason());
+			assertEquals(true, ddpDisconnectedMessage.getRemote().booleanValue());
+		}
 	}
 
 	/**
@@ -57,22 +101,18 @@ public class TestDDPConnections extends TestCase {
 	 * @throws InterruptedException
 	 */
 	public void testDisconnect() throws UnableToConnectException, InterruptedException, URISyntaxException {
-		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
-		DdpTestClientListener obs = new DdpTestClientListener(ddp);
-		// make connection to Meteor server
-		ddp.connect();
+		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, TestConstants.isSSL)) {
+			ddp.addConnectionListener(ddpConnectionListener);
+			connectCountDownLatch = new CountDownLatch(1);
+			ddp.connect();
+			connectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			assertTrue(ddp.getConnectionState() == ConnectionState.CONNECTED);
 
-		// we need to wait a bit before the socket is opened but make sure it's successful
-		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.CONNECTED);
-
-		// try disconnect
-		ddp.disconnect();
-
-		// wait a bit to make sure our state has changed to closed
-		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.CLOSED);
+			disconnectCountDownLatch = new CountDownLatch(1);
+			ddp.disconnect();
+			disconnectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			assertTrue(ddp.getConnectionState() == ConnectionState.CLOSED);
+		}
 	}
 
 	/**
@@ -83,36 +123,29 @@ public class TestDDPConnections extends TestCase {
 	 * @throws UnableToConnectException
 	 */
 	public void testReconnect() throws URISyntaxException, InterruptedException, UnableToConnectException {
-		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
-		DdpTestClientListener obs = new DdpTestClientListener(ddp);
-		// make connection to Meteor server
-		ddp.connect();
+		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, TestConstants.isSSL)) {
+			ddp.addConnectionListener(ddpConnectionListener);
+			connectCountDownLatch = new CountDownLatch(1);
+			ddp.connect();
+			connectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			assertTrue(ddp.getConnectionState() == ConnectionState.CONNECTED);
 
-		// we need to wait a bit before the socket is opened but make sure it's successful
-		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.CONNECTED);
+			disconnectCountDownLatch = new CountDownLatch(1);
+			ddp.disconnect();
+			disconnectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			assertTrue(ddp.getConnectionState() == ConnectionState.CLOSED);
 
-		// try disconnect
-		ddp.disconnect();
+			// now test that we can reconnect to the server
+			connectCountDownLatch = new CountDownLatch(1);
+			ddp.connect();
+			connectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			assertTrue(ddp.getConnectionState() == ConnectionState.CONNECTED);
 
-		// wait a bit to make sure our state has changed to closed
-		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.CLOSED);
-
-		// now test that we can reconnect to the server
-		ddp.connect();
-
-		// we need to wait a bit before the socket is opened but make sure it's successful
-		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.CONNECTED);
-
-		// try disconnect
-		ddp.disconnect();
-
-		// wait a bit to make sure our state has changed to closed
-		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.CLOSED);
+			disconnectCountDownLatch = new CountDownLatch(1);
+			ddp.disconnect();
+			disconnectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			assertTrue(ddp.getConnectionState() == ConnectionState.CLOSED);
+		}
 	}
 
 	/**
@@ -123,29 +156,26 @@ public class TestDDPConnections extends TestCase {
 	 * @throws UnableToConnectException
 	 */
 	public void testPing() throws URISyntaxException, InterruptedException, UnableToConnectException {
-		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
-		DdpTestClientListener obs = new DdpTestClientListener(ddp);
-		// make connection to Meteor server
-		ddp.connect();
+		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, TestConstants.isSSL)) {
+			ddp.addConnectionListener(ddpConnectionListener);
+			ddp.addHeartbeatListener(ddpHeartbeatListener);
+			connectCountDownLatch = new CountDownLatch(1);
+			ddp.connect();
+			connectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			assertTrue(ddp.getConnectionState() == ConnectionState.CONNECTED);
 
-		// we need to wait a bit before the socket is opened but make sure it's successful
-		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.CONNECTED);
+			pingCountDownLatch = new CountDownLatch(1);
+			ddp.ping("ping1");
+			pingCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			DdpClientPongMessage ddpClientPongMessage = (DdpClientPongMessage) ddpClientHeartbeatMessage;
+			assertNotNull(ddpClientPongMessage);
+			assertTrue(ddpClientPongMessage.getId().equals("ping1"));
 
-		// send a ping and verify we got a pong back
-		assertTrue(obs.pingId == null);
-		ddp.ping("ping1");
-		Thread.sleep(500);
-		assertNotNull(obs.pingId);
-		assertTrue(obs.pingId.equals("ping1"));
-
-		// try disconnect
-		ddp.disconnect();
-
-		// wait a bit to make sure our state has changed to closed
-		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.CLOSED);
+			disconnectCountDownLatch = new CountDownLatch(1);
+			ddp.disconnect();
+			disconnectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			assertTrue(ddp.getConnectionState() == ConnectionState.CLOSED);
+		}
 	}
 
 	/**
@@ -157,21 +187,16 @@ public class TestDDPConnections extends TestCase {
 	 */
 	public void testUseSSL() throws URISyntaxException, InterruptedException, UnableToConnectException {
 		// NOTE: this test will only pass if we're connecting to the server using SSL:
-		if (TestConstants.sMeteorPort != 443) {
+		if (!TestConstants.isSSL) {
 			return;
 		}
 
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, true);
-		DdpTestClientListener obs = new DdpTestClientListener(ddp);
-		// make connection to Meteor server
-		ddp.connect();
-
-		// we need to wait a bit before the socket is opened but make sure it's successful
-		Thread.sleep(500);
-		assertTrue(obs.ddpState == DdpState.CONNECTED);
-
-		// try disconnect
-		ddp.disconnect();
+		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, true)) {
+			connectCountDownLatch = new CountDownLatch(1);
+			ddp.connect();
+			connectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
+			assertTrue(ddp.getConnectionState() == ConnectionState.CONNECTED);
+		}
 	}
 }
