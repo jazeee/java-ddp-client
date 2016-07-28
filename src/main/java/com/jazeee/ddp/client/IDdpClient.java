@@ -19,7 +19,7 @@ public interface IDdpClient {
 	/**
 	 * Error handling for any errors over the web-socket connection
 	 * 
-	 * @param ex exception to convert to event
+	 * @param throwable throwable to convert to event
 	 */
 	public void onError(Throwable throwable);
 

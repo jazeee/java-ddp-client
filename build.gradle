@@ -3,9 +3,8 @@ apply plugin: 'eclipse'
 apply plugin: 'signing'
 apply plugin: 'maven'
 
-group = 'com.keysolutions'
-version = '1.0.0.4'
-// compile for JDK 1.5 for maximum backwards compatibility
+group = 'com.jazeee'
+version = '2.0.0.0'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
@@ -68,12 +67,12 @@ uploadArchives {
             name 'JavaDDPClient'
             packaging 'jar'
             description 'JavaDDPClient is a Java library for the Meteor.js framework DDP websocket protocol'
-            url 'https://github.com/kenyee/java-ddp-client'
+            url 'https://github.com/jazeee/java-ddp-client'
  
             scm {
-                url 'scm:git@github.com:kenyee/java-ddp-client.git'
-                connection 'scm:git@github.com:kenyee/java-ddp-client.git'
-                developerConnection 'scm:git@github.com:kenyee/java-ddp-client.git'
+                url 'scm:git@github.com:jazeee/java-ddp-client.git'
+                connection 'scm:git@github.com:jazeee/java-ddp-client.git'
+                developerConnection 'scm:git@github.com:jazeee/java-ddp-client.git'
             }
  
             licenses {
@@ -86,8 +85,8 @@ uploadArchives {
  
             developers {
                 developer {
-                    id 'kenyee'
-                    name 'Ken Yee'
+                    id 'jazeee'
+                    name 'Jaz Singh'
                 }
             }
         }
