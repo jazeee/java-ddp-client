@@ -109,7 +109,7 @@ public class DdpWebSocketClient implements Closeable {
 		this.webSocketClientAtomicReference.set(new WebSocketClient(serverUrl) {
 			@Override
 			public void onOpen(ServerHandshake handshakedata) {
-				ddpClient.connectionOpened();
+				ddpClient.onConnectionOpened();
 			}
 
 			@Override
@@ -119,12 +119,12 @@ public class DdpWebSocketClient implements Closeable {
 
 			@Override
 			public void onError(Exception ex) {
-				ddpClient.handleError(ex);
+				ddpClient.onError(ex);
 			}
 
 			@Override
 			public void onClose(int code, String reason, boolean remote) {
-				ddpClient.connectionClosed(code, reason, remote);
+				ddpClient.onConnectionClosed(code, reason, remote);
 			}
 		});
 		isConnectionStarted.set(false);

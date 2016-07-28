@@ -44,7 +44,7 @@ public class TestDDPConnections extends TestCase {
 	public void testConnectionClosed() throws Exception {
 		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
-		ddp.connectionClosed(5, "test", true);
+		ddp.onConnectionClosed(5, "test", true);
 		assertEquals(5, obs.closeCode);
 		assertEquals("test", obs.closeReason);
 		assertEquals(true, obs.isClosedFromRemote);

@@ -101,6 +101,21 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		}
 	}
 
+	/**
+	 * Initiate connection to meteor server
+	 * 
+	 * @throws URISyntaxException
+	 * @throws MalformedURLException
+	 */
+	public void connect() throws URISyntaxException {
+		synchronized (connectionState) {
+			if (!connectionState.get().equals(ConnectionState.CONNECTED)) {
+				connectToWebSocketClient();
+			}
+			ddpWebSocketClientAtomicReference.get().connect();
+		}
+	}
+
 	@Override
 	public void close() {
 		DdpWebSocketClient priorDdpWebSocketClient = ddpWebSocketClientAtomicReference.get();
@@ -122,7 +137,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @see com.jazeee.ddp.client.IDdpClient#connectionOpened()
 	 */
 	@Override
-	public void connectionOpened() {
+	public void onConnectionOpened() {
 		log.trace("WebSocket connection opened");
 		// reply to Meteor server with connection confirmation message ({"msg": "connect"})
 		send(new DdpConnectMessage());
@@ -136,7 +151,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @see com.jazeee.ddp.client.IDdpClient#connectionClosed(int, java.lang.String, boolean)
 	 */
 	@Override
-	public void connectionClosed(int code, String reason, boolean isDisconnectedByRemote) {
+	public void onConnectionClosed(int code, String reason, boolean isDisconnectedByRemote) {
 		DdpDisconnectedMessage ddpDisconnectedMessage = new DdpDisconnectedMessage(Integer.toString(code), reason, isDisconnectedByRemote);
 		log.debug("Java client closed: {}", ddpDisconnectedMessage);
 		notifyConnectionListeners(ddpDisconnectedMessage);
@@ -148,7 +163,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @see com.jazeee.ddp.client.IDdpClient#handleError(java.lang.Exception)
 	 */
 	@Override
-	public void handleError(Exception ex) {
+	public void onError(Exception ex) {
 		String reason = ex.getMessage();
 		if (reason == null) {
 			reason = "Unknown websocket error (exception in callback?)";
@@ -165,21 +180,6 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 */
 	private String getNextId() {
 		return Long.toString(currentMessageId.incrementAndGet());
-	}
-
-	/**
-	 * Initiate connection to meteor server
-	 * 
-	 * @throws URISyntaxException
-	 * @throws MalformedURLException
-	 */
-	public void connect() throws URISyntaxException {
-		synchronized (connectionState) {
-			if (!connectionState.get().equals(ConnectionState.CONNECTED)) {
-				connectToWebSocketClient();
-			}
-			ddpWebSocketClientAtomicReference.get().connect();
-		}
 	}
 
 	/**
@@ -289,7 +289,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		try {
 			this.ddpWebSocketClientAtomicReference.get().sendText(json);
 		} catch (WebsocketNotConnectedException ex) {
-			handleError(ex);
+			onError(ex);
 			connectionState.set(ConnectionState.CLOSED);
 		}
 	}

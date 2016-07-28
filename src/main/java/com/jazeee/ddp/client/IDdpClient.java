@@ -5,7 +5,7 @@ public interface IDdpClient {
 	/**
 	 * Called after initial web-socket connection. Sends back a connection confirmation message to the Meteor server.
 	 */
-	public abstract void connectionOpened();
+	public abstract void onConnectionOpened();
 
 	/**
 	 * Called when connection is closed
@@ -14,14 +14,14 @@ public interface IDdpClient {
 	 * @param reason Reason msg for error
 	 * @param isDisconnectedByRemote Whether error is from remote side
 	 */
-	public abstract void connectionClosed(int code, String reason, boolean isDisconnectedByRemote);
+	public abstract void onConnectionClosed(int code, String reason, boolean isDisconnectedByRemote);
 
 	/**
 	 * Error handling for any errors over the web-socket connection
 	 * 
 	 * @param ex exception to convert to event
 	 */
-	public abstract void handleError(Exception ex);
+	public abstract void onError(Exception ex);
 
 	/**
 	 * Notifies observers of this DDP client of messages received from the Meteor server
