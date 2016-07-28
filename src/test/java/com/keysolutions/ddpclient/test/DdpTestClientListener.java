@@ -30,7 +30,6 @@ import com.jazeee.ddp.messages.client.collections.DdpChangedCollectionMessage;
 import com.jazeee.ddp.messages.client.collections.DdpRemovedFromCollectionMessage;
 import com.jazeee.ddp.messages.client.collections.IDdpCollectionMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
-import com.jazeee.ddp.messages.client.connection.DdpDisconnectedMessage;
 import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
 import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
@@ -40,6 +39,7 @@ import com.jazeee.ddp.messages.client.subscriptions.DdpNoSubscriptionMessage;
 import com.jazeee.ddp.messages.client.subscriptions.DdpSubscriptionReadyMessage;
 import com.jazeee.ddp.messages.client.subscriptions.IDdpSubscriptionMessage;
 import com.keysolutions.ddpclient.DdpClient;
+import com.keysolutions.ddpclient.DdpDisconnectedMessage;
 
 /**
  * @author kenyee

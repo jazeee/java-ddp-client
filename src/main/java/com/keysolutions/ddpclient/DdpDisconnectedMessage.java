@@ -1,16 +1,17 @@
-package com.jazeee.ddp.messages.client.connection;
+package com.keysolutions.ddpclient;
 
+import com.jazeee.ddp.messages.client.connection.IDdpClientConnectionMessage;
 
 public class DdpDisconnectedMessage implements IDdpClientConnectionMessage {
 	private final String code;
 	private final String reason;
-	private final Boolean remote;
+	private final Boolean isDisconnectedByRemote;
 
-	public DdpDisconnectedMessage() {
+	public DdpDisconnectedMessage(String code, String reason, boolean isDisconnectedByRemote) {
 		super();
-		this.code = "";
-		this.reason = "";
-		this.remote = false;
+		this.code = code;
+		this.reason = reason;
+		this.isDisconnectedByRemote = isDisconnectedByRemote;
 	}
 
 	public String getCode() {
@@ -22,7 +23,7 @@ public class DdpDisconnectedMessage implements IDdpClientConnectionMessage {
 	}
 
 	public Boolean getRemote() {
-		return remote;
+		return isDisconnectedByRemote;
 	}
 
 	@Override
@@ -32,8 +33,8 @@ public class DdpDisconnectedMessage implements IDdpClientConnectionMessage {
 		builder.append(code);
 		builder.append(", reason=");
 		builder.append(reason);
-		builder.append(", remote=");
-		builder.append(remote);
+		builder.append(", isDisconnectedByRemote=");
+		builder.append(isDisconnectedByRemote);
 		builder.append("]");
 		return builder.toString();
 	}

@@ -5,11 +5,11 @@ public class DdpTopLevelErrorMessage implements IDdpClientMessage {
 	private final String offendingMessage;
 	private final String javaSource;
 
-	public DdpTopLevelErrorMessage() {
+	public DdpTopLevelErrorMessage(String reason, String javaSource) {
 		super();
-		this.reason = "";
+		this.reason = reason;
 		this.offendingMessage = "";
-		this.javaSource = "";
+		this.javaSource = javaSource;
 	}
 
 	public String getReason() {

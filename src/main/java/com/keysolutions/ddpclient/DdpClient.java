@@ -278,13 +278,12 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * 
 	 * @param code WebSocket Error code
 	 * @param reason Reason msg for error
-	 * @param remote Whether error is from remote side
+	 * @param isDisconnectedByRemote Whether error is from remote side
 	 */
-	private void connectionClosed(int code, String reason, boolean remote) {
-		// changed formatting to always return a JSON object
-		String closeMsg = "{\"msg\":\"closed\",\"code\":\"" + code + "\",\"reason\":\"" + reason + "\",\"remote\":" + remote + "}";
-		log.debug("{}", closeMsg);
-		onReceived(closeMsg);
+	private void connectionClosed(int code, String reason, boolean isDisconnectedByRemote) {
+		DdpDisconnectedMessage ddpDisconnectedMessage = new DdpDisconnectedMessage(Integer.toString(code), reason, isDisconnectedByRemote);
+		log.debug("Java client closed: {}", ddpDisconnectedMessage);
+		notifyConnectionListeners(ddpDisconnectedMessage);
 	}
 
 	/**
@@ -293,14 +292,13 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @param ex exception to convert to event
 	 */
 	private void handleError(Exception ex) {
-		// changed formatting to always return a JSON object
 		String reason = ex.getMessage();
 		if (reason == null) {
 			reason = "Unknown websocket error (exception in callback?)";
 		}
-		String errorMsg = "{\"msg\":\"error\",\"javaSource\":\"WebSocketClient\",\"reason\":\"" + reason + "\"}";
-		log.debug("{}", errorMsg);
-		onReceived(errorMsg);
+		DdpTopLevelErrorMessage ddpTopLevelErrorMessage = new DdpTopLevelErrorMessage(reason, "JavaWebSocketClient");
+		log.debug("{}", ddpTopLevelErrorMessage);
+		notifyTopLevelErrorListeners(ddpTopLevelErrorMessage);
 	}
 
 	/**
@@ -479,7 +477,6 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 			switch (ddpClientMessageType) {
 			case CONNECTED:
 			case FAILED:
-			case CLOSED:
 				notifyConnectionListeners((IDdpClientConnectionMessage) ddpClientMessage);
 				break;
 			case READY:

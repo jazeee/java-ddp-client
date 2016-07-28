@@ -8,7 +8,6 @@ import com.jazeee.ddp.messages.client.collections.DdpMovedBeforeCollectionMessag
 import com.jazeee.ddp.messages.client.collections.DdpRemovedFromCollectionMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectFailedMessage;
 import com.jazeee.ddp.messages.client.connection.DdpConnectedMessage;
-import com.jazeee.ddp.messages.client.connection.DdpDisconnectedMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPingMessage;
 import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
 import com.jazeee.ddp.messages.client.methodCalls.DdpMethodResultMessage;
@@ -21,7 +20,6 @@ public enum DdpClientMessageType {
 	// Connection status
 	CONNECTED(DdpConnectedMessage.class), 
 	FAILED(DdpConnectFailedMessage.class),
-	CLOSED(DdpDisconnectedMessage.class),
 	// Method calls
 	RESULT(DdpMethodResultMessage.class),
 	UPDATED(DdpMethodUpdatedMessage.class),
