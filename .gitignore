@@ -17,5 +17,4 @@ bin/
 local.properties
 *.iml
 build/outputs/
-/build/
 gradle.properties
