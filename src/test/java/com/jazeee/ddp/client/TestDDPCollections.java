@@ -253,7 +253,7 @@ public class TestDDPCollections {
 		options.put("userid", obs.userId);
 		// you need to specify the _id if you're creating doc on client
 		options.put("_id", UUID.randomUUID().toString());
-		ddp.collectionInsert("TestCollection", options);
+		ddp.insertIntoCollection("TestCollection", options);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
 		assertTrue(obs.collections.containsKey("TestCollection"));
@@ -267,7 +267,7 @@ public class TestDDPCollections {
 		Map<String, Object> setOptions = new HashMap<String, Object>();
 		setOptions.put("testfield", "hello");
 		options.put("$set", setOptions);
-		ddp.collectionUpdate("TestCollection", docId, options);
+		ddp.updateCollection("TestCollection", docId, options);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
 		// verify that collection got updated
@@ -275,7 +275,7 @@ public class TestDDPCollections {
 		Map<String, Object> doc = (Map<String, Object>) coll.get(docId);
 		assertEquals("hello", doc.get("testfield"));
 		// try to do a delete
-		ddp.collectionDelete("TestCollection", docId);
+		ddp.deleteFromCollection("TestCollection", docId);
 		// verify that the collection is now empty
 		Thread.sleep(500);
 		assertEquals(0, obs.collections.get("TestCollection").size());
@@ -306,7 +306,7 @@ public class TestDDPCollections {
 		options.put("userid", obs.userId);
 		// you need to specify the _id if you're creating doc on client
 		options.put("_id", UUID.randomUUID().toString());
-		ddp.collectionInsert("TestCollection", options);
+		ddp.insertIntoCollection("TestCollection", options);
 		// wait a bit to get it sync'd back down
 		Thread.sleep(500);
 		assertTrue(obs.collections.containsKey("TestCollection"));

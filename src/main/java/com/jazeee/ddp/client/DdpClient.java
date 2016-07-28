@@ -1,6 +1,7 @@
 package com.jazeee.ddp.client;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -8,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
+import javax.websocket.DeploymentException;
 
 import com.google.gson.Gson;
 import com.jazeee.common.notifier.Notifier;
@@ -107,12 +108,16 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @throws URISyntaxException
 	 * @throws MalformedURLException
 	 */
-	public void connect() throws URISyntaxException {
+	public void connect() throws UnableToConnectException {
 		synchronized (connectionState) {
-			if (!connectionState.get().equals(ConnectionState.CONNECTED)) {
-				connectToWebSocketClient();
+			try {
+				if (!connectionState.get().equals(ConnectionState.CONNECTED)) {
+					connectToWebSocketClient();
+				}
+				ddpWebSocketClientAtomicReference.get().connect();
+			} catch (IOException | DeploymentException | URISyntaxException e) {
+				throw new UnableToConnectException(e);
 			}
-			ddpWebSocketClientAtomicReference.get().connect();
 		}
 	}
 
@@ -163,8 +168,8 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @see com.jazeee.ddp.client.IDdpClient#handleError(java.lang.Exception)
 	 */
 	@Override
-	public void onError(Exception ex) {
-		String reason = ex.getMessage();
+	public void onError(Throwable throwable) {
+		String reason = throwable.getMessage();
 		if (reason == null) {
 			reason = "Unknown websocket error (exception in callback?)";
 		}
@@ -229,7 +234,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @param insertParams Document fields
 	 * @return Returns command ID
 	 */
-	public String collectionInsert(String collectionName, Map<String, Object> insertParams) {
+	public String insertIntoCollection(String collectionName, Map<String, Object> insertParams) {
 		Object[] collArgs = new Object[1];
 		collArgs[0] = insertParams;
 		return callMethod("/" + collectionName + "/insert", collArgs);
@@ -242,7 +247,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @param docId _id of document
 	 * @return Returns command ID
 	 */
-	public String collectionDelete(String collectionName, String docId) {
+	public String deleteFromCollection(String collectionName, String docId) {
 		Object[] collArgs = new Object[1];
 		Map<String, Object> selector = new HashMap<String, Object>();
 		selector.put("_id", docId);
@@ -258,7 +263,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	 * @param updateParams Map w/ mongoDB parameters to pass in for update
 	 * @return Returns command ID
 	 */
-	public String collectionUpdate(String collectionName, String docId, Map<String, Object> updateParams) {
+	public String updateCollection(String collectionName, String docId, Map<String, Object> updateParams) {
 		Map<String, Object> selector = new HashMap<String, Object>();
 		Object[] collArgs = new Object[2];
 		selector.put("_id", docId);
@@ -288,7 +293,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		log.debug("Sending {}", substring);
 		try {
 			this.ddpWebSocketClientAtomicReference.get().sendText(json);
-		} catch (WebsocketNotConnectedException ex) {
+		} catch (IOException ex) {
 			onError(ex);
 			connectionState.set(ConnectionState.CLOSED);
 		}
@@ -347,7 +352,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 	/**
 	 * @return current DDP connection state (disconnected/connected/closed)
 	 */
-	public ConnectionState getState() {
+	public ConnectionState getConnectionState() {
 		return connectionState.get();
 	}
 
@@ -355,7 +360,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		this.heartbeatNotifier.addListener(ddpHeartbeatListener);
 	}
 
-	public void notifyHeartbeatListeners(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
+	private void notifyHeartbeatListeners(IDdpClientHeartbeatMessage ddpClientHeartbeatMessage) {
 		this.heartbeatNotifier.notifyListeners(ddpClientHeartbeatMessage);
 	}
 
@@ -363,7 +368,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		this.connectionNotifier.addListener(ddpConnectionListener);
 	}
 
-	public void notifyConnectionListeners(IDdpClientConnectionMessage ddpClientConnectionMessage) {
+	private void notifyConnectionListeners(IDdpClientConnectionMessage ddpClientConnectionMessage) {
 		this.connectionNotifier.notifyListeners(ddpClientConnectionMessage);
 	}
 
@@ -371,7 +376,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		this.methodCallNotifier.addListener(ddpMethodCallListener);
 	}
 
-	public void notifyMethodCallListeners(IDdpMethodCallMessage ddpMethodCallMessage) {
+	private void notifyMethodCallListeners(IDdpMethodCallMessage ddpMethodCallMessage) {
 		this.methodCallNotifier.notifyListeners(ddpMethodCallMessage);
 	}
 
@@ -379,7 +384,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		this.subscriptionNotifier.addListener(ddpSubscriptionListener);
 	}
 
-	public void notifySubscriptionListeners(IDdpSubscriptionMessage ddpSubscriptionMessage) {
+	private void notifySubscriptionListeners(IDdpSubscriptionMessage ddpSubscriptionMessage) {
 		this.subscriptionNotifier.notifyListeners(ddpSubscriptionMessage);
 	}
 
@@ -387,7 +392,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		this.collectionNotifier.addListener(ddpCollectionListener);
 	}
 
-	public void notifyCollectionListeners(IDdpCollectionMessage ddpCollectionMessage) {
+	private void notifyCollectionListeners(IDdpCollectionMessage ddpCollectionMessage) {
 		this.collectionNotifier.notifyListeners(ddpCollectionMessage);
 	}
 
@@ -395,7 +400,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpConnectionListener,
 		this.topLevelErrorNotifier.addListener(ddpTopLevelErrorListener);
 	}
 
-	public void notifyTopLevelErrorListeners(DdpTopLevelErrorMessage ddpTopLevelErrorMessage) {
+	private void notifyTopLevelErrorListeners(DdpTopLevelErrorMessage ddpTopLevelErrorMessage) {
 		this.topLevelErrorNotifier.notifyListeners(ddpTopLevelErrorMessage);
 	}
 

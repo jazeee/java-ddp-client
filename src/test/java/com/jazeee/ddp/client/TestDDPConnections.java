@@ -56,7 +56,7 @@ public class TestDDPConnections extends TestCase {
 	 * @throws URISyntaxException
 	 * @throws InterruptedException
 	 */
-	public void testDisconnect() throws URISyntaxException, InterruptedException {
+	public void testDisconnect() throws UnableToConnectException, InterruptedException, URISyntaxException {
 		// create DDP client instance and hook testobserver to it
 		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
@@ -80,8 +80,9 @@ public class TestDDPConnections extends TestCase {
 	 * 
 	 * @throws URISyntaxException
 	 * @throws InterruptedException
+	 * @throws UnableToConnectException
 	 */
-	public void testReconnect() throws URISyntaxException, InterruptedException {
+	public void testReconnect() throws URISyntaxException, InterruptedException, UnableToConnectException {
 		// create DDP client instance and hook testobserver to it
 		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
@@ -119,8 +120,9 @@ public class TestDDPConnections extends TestCase {
 	 * 
 	 * @throws URISyntaxException
 	 * @throws InterruptedException
+	 * @throws UnableToConnectException
 	 */
-	public void testPing() throws URISyntaxException, InterruptedException {
+	public void testPing() throws URISyntaxException, InterruptedException, UnableToConnectException {
 		// create DDP client instance and hook testobserver to it
 		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
@@ -151,8 +153,9 @@ public class TestDDPConnections extends TestCase {
 	 * 
 	 * @throws URISyntaxException
 	 * @throws InterruptedException
+	 * @throws UnableToConnectException
 	 */
-	public void testUseSSL() throws URISyntaxException, InterruptedException {
+	public void testUseSSL() throws URISyntaxException, InterruptedException, UnableToConnectException {
 		// NOTE: this test will only pass if we're connecting to the server using SSL:
 		if (TestConstants.sMeteorPort != 443) {
 			return;

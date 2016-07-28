@@ -50,8 +50,9 @@ public class TestDDPUsers extends TestCase {
 	 * 
 	 * @throws URISyntaxException
 	 * @throws InterruptedException
+	 * @throws UnableToConnectException
 	 */
-	public void testCreateUser() throws URISyntaxException, InterruptedException {
+	public void testCreateUser() throws URISyntaxException, InterruptedException, UnableToConnectException {
 		// TODO: does this belong inside the Java DDP client?
 		// create DDP client instance and hook testobserver to it
 		DdpClient ddp = new DdpClient(TestConstants.sMeteorHost, TestConstants.sMeteorPort, false);

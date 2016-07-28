@@ -21,7 +21,7 @@ public interface IDdpClient {
 	 * 
 	 * @param ex exception to convert to event
 	 */
-	public void onError(Exception ex);
+	public void onError(Throwable throwable);
 
 	/**
 	 * Notifies observers of this DDP client of messages received from the Meteor server
