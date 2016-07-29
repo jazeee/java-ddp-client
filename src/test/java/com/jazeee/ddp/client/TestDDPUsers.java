@@ -37,7 +37,7 @@ public class TestDDPUsers extends TestCase {
 	public void testCreateUser() throws URISyntaxException, InterruptedException, UnableToConnectException {
 		// TODO: does this belong inside the Java DDP client?
 		// create DDP client instance and hook testobserver to it
-		DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, false);
+		DdpClient ddp = new DdpClient(TestConstants.METEOR_URI);
 		DdpTestClientListener obs = new DdpTestClientListener(ddp);
 		ddp.connect();
 

@@ -3,7 +3,6 @@ package com.jazeee.ddp.client;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.websocket.ClientEndpointConfig;
@@ -17,7 +16,6 @@ import javax.websocket.Session;
 import org.glassfish.tyrus.client.ClientManager;
 
 import com.jazeee.common.utils.nullability.NotNull;
-import com.jazeee.common.utils.nullability.Nullable;
 
 public class DdpWebSocketClient implements Closeable {
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
@@ -28,15 +26,11 @@ public class DdpWebSocketClient implements Closeable {
 	private final WebSocketEndpoint webSocketEndpoint;
 	private final ClientManager clientManager;
 
-	DdpWebSocketClient(@NotNull IDdpClient ddpClient, @NotNull String serverIpAddress, @Nullable Integer serverPort, boolean useSSL) throws URISyntaxException {
+	DdpWebSocketClient(@NotNull IDdpClient ddpClient, @NotNull URI serverUri) {
 		assert (ddpClient != null);
-		assert (serverIpAddress != null && serverIpAddress.length() > 2);
+		assert (serverUri != null);
 		this.ddpClient = ddpClient;
-		if (serverPort == null) {
-			serverPort = 3000;
-		}
-		String urlScheme = (useSSL ? "wss" : "ws");
-		serverUri = new URI(urlScheme, null, serverIpAddress, serverPort, "/websocket", null, null);
+		this.serverUri = serverUri;
 		// See https://tyrus.java.net/documentation/1.13/index/getting-started.html
 		this.clientManager = ClientManager.createClient();
 		webSocketEndpoint = new WebSocketEndpoint();
@@ -100,8 +94,8 @@ public class DdpWebSocketClient implements Closeable {
 			synchronized (clientManager) {
 				clientManager.shutdown();
 			}
+			ddpClient.onConnectionClosed(0, "Connection Closed", true);
 		}
-		ddpClient.onConnectionClosed(0, "Connection Closed", true);
 	}
 
 	public void sendText(String text) throws IOException {

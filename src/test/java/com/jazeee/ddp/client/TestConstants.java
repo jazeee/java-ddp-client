@@ -16,17 +16,26 @@
 
 package com.jazeee.ddp.client;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public final class TestConstants {
 	// Specify location of Meteor server (assumes it is running locally)
 	// If you're using VirtualBox, you can forward localhost to the VM running Meteor
-	public static final String meteorHost = "localhost";
-	public static final Integer meteorPort = 3000;
-	public static final boolean isSSL = false;
-	// public static final String sMeteorHost = "meteor-test-ddp-endpoint.meteor.com";
-	// public static final Integer sMeteorPort = 443;
+	public static final boolean IS_SSL = false;
+	private static final String URL_SCHEME = IS_SSL ? "wss" : "ws";
+	public static final URI METEOR_URI;
+	static {
+		try {
+			METEOR_URI = new URI(URL_SCHEME, null, "localhost", 3000, "", null, null);
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+			throw new IllegalArgumentException("Bad URI", e);
+		}
+	}
 
 	// note also that your Meteor server app should also have
 	// a user named test@test.com with a password of "password"
-	public static final String meteorUsername = "test@test.com";
-	public static final String meteorPassword = "password";
+	public static final String METEOR_USERNAME = "test@test.com";
+	public static final String METEOR_PASSWORD = "password";
 }

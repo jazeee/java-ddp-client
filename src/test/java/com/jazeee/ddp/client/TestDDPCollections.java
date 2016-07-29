@@ -30,7 +30,7 @@ public class TestDDPCollections {
 		System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
 
 		// create DDP client instance and hook testobserver to it
-		ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, false);
+		ddp = new DdpClient(TestConstants.METEOR_URI);
 		obs = new DdpTestClientListener(ddp);
 		ddp.connect();
 
@@ -47,7 +47,7 @@ public class TestDDPCollections {
 		// resume: resumetoken (no password required)
 		// }]
 		Object[] methodArgs = new Object[1];
-		EmailAuth emailpass = new EmailAuth(TestConstants.meteorUsername, TestConstants.meteorPassword);
+		EmailAuth emailpass = new EmailAuth(TestConstants.METEOR_USERNAME, TestConstants.METEOR_PASSWORD);
 		methodArgs[0] = emailpass;
 		String methodId = ddp.callMethod("login", methodArgs);
 		assertEquals("1", methodId); // first ID should be 1

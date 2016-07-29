@@ -16,11 +16,16 @@
 
 package com.jazeee.ddp.client;
 
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
+
+import org.apache.http.client.utils.URIBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.jazeee.ddp.client.DdpClient.ConnectionState;
 import com.jazeee.ddp.listeners.IDdpConnectionListener;
@@ -31,6 +36,7 @@ import com.jazeee.ddp.messages.client.heartbeat.DdpClientPongMessage;
 import com.jazeee.ddp.messages.client.heartbeat.IDdpClientHeartbeatMessage;
 
 public class TestDDPConnections extends TestCase {
+	private Logger logger;
 	private IDdpConnectionListener ddpConnectionListener;
 	private IDdpHeartbeatListener ddpHeartbeatListener;
 	private CountDownLatch connectCountDownLatch;
@@ -42,6 +48,7 @@ public class TestDDPConnections extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
+		logger = LoggerFactory.getLogger(TestDDPConnections.class);
 		ddpConnectionListener = new IDdpConnectionListener() {
 			@Override
 			public void processMessage(IDdpClientConnectionMessage ddpClientConnectionMessage) {
@@ -82,7 +89,7 @@ public class TestDDPConnections extends TestCase {
 	 * @throws Exception
 	 */
 	public void testConnectionClosed() throws Exception {
-		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, TestConstants.isSSL)) {
+		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URI)) {
 			ddp.addConnectionListener(ddpConnectionListener);
 			disconnectCountDownLatch = new CountDownLatch(1);
 			ddp.onConnectionClosed(5, "test", true);
@@ -101,7 +108,7 @@ public class TestDDPConnections extends TestCase {
 	 * @throws InterruptedException
 	 */
 	public void testDisconnect() throws UnableToConnectException, InterruptedException, URISyntaxException {
-		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, TestConstants.isSSL)) {
+		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URI)) {
 			ddp.addConnectionListener(ddpConnectionListener);
 			connectCountDownLatch = new CountDownLatch(1);
 			ddp.connect();
@@ -123,7 +130,7 @@ public class TestDDPConnections extends TestCase {
 	 * @throws UnableToConnectException
 	 */
 	public void testReconnect() throws URISyntaxException, InterruptedException, UnableToConnectException {
-		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, TestConstants.isSSL)) {
+		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URI)) {
 			ddp.addConnectionListener(ddpConnectionListener);
 			connectCountDownLatch = new CountDownLatch(1);
 			ddp.connect();
@@ -156,7 +163,7 @@ public class TestDDPConnections extends TestCase {
 	 * @throws UnableToConnectException
 	 */
 	public void testPing() throws URISyntaxException, InterruptedException, UnableToConnectException {
-		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, TestConstants.isSSL)) {
+		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URI)) {
 			ddp.addConnectionListener(ddpConnectionListener);
 			ddp.addHeartbeatListener(ddpHeartbeatListener);
 			connectCountDownLatch = new CountDownLatch(1);
@@ -186,13 +193,14 @@ public class TestDDPConnections extends TestCase {
 	 * @throws UnableToConnectException
 	 */
 	public void testUseSSL() throws URISyntaxException, InterruptedException, UnableToConnectException {
+		URI meteorUri = TestConstants.METEOR_URI;
 		// NOTE: this test will only pass if we're connecting to the server using SSL:
-		if (!TestConstants.isSSL) {
-			return;
+		if (!TestConstants.IS_SSL) {
+			meteorUri = new URIBuilder("https://atmospherejs.com/").build();
+			logger.debug("Testing SSL using URI: {}", meteorUri);
 		}
 
-		// create DDP client instance and hook testobserver to it
-		try (DdpClient ddp = new DdpClient(TestConstants.meteorHost, TestConstants.meteorPort, true)) {
+		try (DdpClient ddp = new DdpClient(meteorUri)) {
 			connectCountDownLatch = new CountDownLatch(1);
 			ddp.connect();
 			connectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
