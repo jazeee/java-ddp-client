@@ -30,7 +30,7 @@ public class TestDDPCollections {
 		System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
 
 		// create DDP client instance and hook testobserver to it
-		ddp = new DdpClient(TestConstants.METEOR_URI);
+		ddp = new DdpClient(TestConstants.METEOR_URL);
 		obs = new DdpTestClientListener(ddp);
 		ddp.connect();
 

@@ -16,21 +16,20 @@
 
 package com.jazeee.ddp.client;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public final class TestConstants {
 	// Specify location of Meteor server (assumes it is running locally)
 	// If you're using VirtualBox, you can forward localhost to the VM running Meteor
 	public static final boolean IS_SSL = false;
-	private static final String URL_SCHEME = IS_SSL ? "wss" : "ws";
-	public static final URI METEOR_URI;
+	public static final URL METEOR_URL;
 	static {
 		try {
-			METEOR_URI = new URI(URL_SCHEME, null, "localhost", 3000, "", null, null);
-		} catch (URISyntaxException e) {
+			METEOR_URL = new URL("http://localhost:3000");
+		} catch (MalformedURLException e) {
 			e.printStackTrace();
-			throw new IllegalArgumentException("Bad URI", e);
+			throw new IllegalArgumentException("Bad URL", e);
 		}
 	}
 

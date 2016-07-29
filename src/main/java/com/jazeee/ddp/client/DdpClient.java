@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -16,6 +17,7 @@ import org.apache.http.client.utils.URIBuilder;
 
 import com.google.gson.Gson;
 import com.jazeee.common.notifier.Notifier;
+import com.jazeee.common.utils.nullability.NotNull;
 import com.jazeee.ddp.client.notificationProcessors.DdpClientHeartbeatNotificationProcessor;
 import com.jazeee.ddp.client.notificationProcessors.DdpCollectionNotificationProcessor;
 import com.jazeee.ddp.client.notificationProcessors.DdpConnectionNotificationProcessor;
@@ -53,7 +55,7 @@ import com.jazeee.ddp.messages.server.subscriptions.DdpUnSubscribeMessage;
 public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListener, IDdpClient, Closeable {
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 	private final AtomicLong currentMessageId = new AtomicLong(0);
-	private final URI meteorUri;
+	private final URL meteorUrl;
 	private final AtomicReference<DdpWebSocketClient> ddpWebSocketClientAtomicReference;
 
 	private final Notifier<IDdpHeartbeatListener, IDdpClientHeartbeatMessage> heartbeatNotifier = new Notifier<>(new DdpClientHeartbeatNotificationProcessor());
@@ -74,14 +76,12 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListen
 	 * Instantiates a Meteor DDP client for the Meteor server located at the supplied IP and port (note: running Meteor locally will typically have a port of 3000 but port 80 is
 	 * the typical default for publicly deployed servers)
 	 *
-	 * @param serverIpAddress IP of Meteor server
-	 * @param serverPort Port of Meteor server, if left null it will default to 3000
-	 * @param useSSL Whether to use SSL for websocket encryption
-	 * @throws URISyntaxException URI error
-	 * @throws MalformedURLException
+	 * @param meteorUri Not Null Meteor URI: new URI("https://atosphericjs.com");
 	 */
-	public DdpClient(URI meteorUri) {
-		this.meteorUri = meteorUri;
+	public DdpClient(@NotNull URL meteorUrl) {
+		super();
+		assert (meteorUrl != null);
+		this.meteorUrl = meteorUrl;
 		this.ddpWebSocketClientAtomicReference = new AtomicReference<>();
 		this.connectionState = new AtomicReference<>(ConnectionState.DISCONNECTED);
 		this.heartbeatNotifier.addListener(this);
@@ -99,17 +99,18 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListen
 	}
 
 	private URI getWebSocketURI() {
-		String httpScheme = meteorUri.getScheme();
-		String webSocketScheme = "ws";
-		if (httpScheme.equalsIgnoreCase("https")) {
-			webSocketScheme = "wss";
-		}
-		URIBuilder uriBuilder = new URIBuilder(meteorUri);
 		try {
+			URI meteorUri = meteorUrl.toURI();
+			String httpScheme = meteorUri.getScheme();
+			String webSocketScheme = "ws";
+			if (httpScheme.equalsIgnoreCase("https")) {
+				webSocketScheme = "wss";
+			}
+			URIBuilder uriBuilder = new URIBuilder(meteorUri);
 			return uriBuilder.setScheme(webSocketScheme).setPath(meteorUri.getPath() + "/websocket").build();
 		} catch (URISyntaxException e) {
 			// This means a significant error in user setup. Throw as runtime
-			throw new IllegalArgumentException("Bad Meteor URI. Cannot convert to WebSocket URI", e);
+			throw new IllegalArgumentException("Bad Meteor URL. Cannot convert to WebSocket URI", e);
 		}
 	}
 

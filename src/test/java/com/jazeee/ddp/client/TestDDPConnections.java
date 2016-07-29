@@ -16,14 +16,14 @@
 
 package com.jazeee.ddp.client;
 
-import java.net.URI;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
 
-import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +89,7 @@ public class TestDDPConnections extends TestCase {
 	 * @throws Exception
 	 */
 	public void testConnectionClosed() throws Exception {
-		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URI)) {
+		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URL)) {
 			ddp.addConnectionListener(ddpConnectionListener);
 			disconnectCountDownLatch = new CountDownLatch(1);
 			ddp.onConnectionClosed(5, "test", true);
@@ -108,7 +108,7 @@ public class TestDDPConnections extends TestCase {
 	 * @throws InterruptedException
 	 */
 	public void testDisconnect() throws UnableToConnectException, InterruptedException, URISyntaxException {
-		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URI)) {
+		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URL)) {
 			ddp.addConnectionListener(ddpConnectionListener);
 			connectCountDownLatch = new CountDownLatch(1);
 			ddp.connect();
@@ -130,7 +130,7 @@ public class TestDDPConnections extends TestCase {
 	 * @throws UnableToConnectException
 	 */
 	public void testReconnect() throws URISyntaxException, InterruptedException, UnableToConnectException {
-		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URI)) {
+		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URL)) {
 			ddp.addConnectionListener(ddpConnectionListener);
 			connectCountDownLatch = new CountDownLatch(1);
 			ddp.connect();
@@ -163,7 +163,7 @@ public class TestDDPConnections extends TestCase {
 	 * @throws UnableToConnectException
 	 */
 	public void testPing() throws URISyntaxException, InterruptedException, UnableToConnectException {
-		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URI)) {
+		try (DdpClient ddp = new DdpClient(TestConstants.METEOR_URL)) {
 			ddp.addConnectionListener(ddpConnectionListener);
 			ddp.addHeartbeatListener(ddpHeartbeatListener);
 			connectCountDownLatch = new CountDownLatch(1);
@@ -191,16 +191,17 @@ public class TestDDPConnections extends TestCase {
 	 * @throws URISyntaxException
 	 * @throws InterruptedException
 	 * @throws UnableToConnectException
+	 * @throws MalformedURLException
 	 */
-	public void testUseSSL() throws URISyntaxException, InterruptedException, UnableToConnectException {
-		URI meteorUri = TestConstants.METEOR_URI;
+	public void testUseSSL() throws InterruptedException, UnableToConnectException, MalformedURLException {
+		URL meteorUrl = TestConstants.METEOR_URL;
 		// NOTE: this test will only pass if we're connecting to the server using SSL:
 		if (!TestConstants.IS_SSL) {
-			meteorUri = new URIBuilder("https://atmospherejs.com/").build();
-			logger.debug("Testing SSL using URI: {}", meteorUri);
+			meteorUrl = new URL("https://atmospherejs.com/");
+			logger.debug("Testing SSL using URL: {}", meteorUrl);
 		}
 
-		try (DdpClient ddp = new DdpClient(meteorUri)) {
+		try (DdpClient ddp = new DdpClient(meteorUrl)) {
 			connectCountDownLatch = new CountDownLatch(1);
 			ddp.connect();
 			connectCountDownLatch.await(500, TimeUnit.MILLISECONDS);
