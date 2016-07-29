@@ -3,6 +3,7 @@ package com.jazeee.ddp.client;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +11,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.websocket.DeploymentException;
+
+import org.apache.http.client.utils.URIBuilder;
 
 import com.google.gson.Gson;
 import com.jazeee.common.notifier.Notifier;
@@ -50,9 +53,7 @@ import com.jazeee.ddp.messages.server.subscriptions.DdpUnSubscribeMessage;
 public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListener, IDdpClient, Closeable {
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 	private final AtomicLong currentMessageId = new AtomicLong(0);
-	private final String serverIpAddress;
-	private final int serverPort;
-	private final boolean useSSL;
+	private final URI meteorUri;
 	private final AtomicReference<DdpWebSocketClient> ddpWebSocketClientAtomicReference;
 
 	private final Notifier<IDdpHeartbeatListener, IDdpClientHeartbeatMessage> heartbeatNotifier = new Notifier<>(new DdpClientHeartbeatNotificationProcessor());
@@ -79,24 +80,36 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListen
 	 * @throws URISyntaxException URI error
 	 * @throws MalformedURLException
 	 */
-	public DdpClient(String serverIpAddress, Integer serverPort, boolean useSSL) throws URISyntaxException {
-		this.serverIpAddress = serverIpAddress;
-		this.serverPort = serverPort;
-		this.useSSL = useSSL;
+	public DdpClient(URI meteorUri) {
+		this.meteorUri = meteorUri;
 		this.ddpWebSocketClientAtomicReference = new AtomicReference<>();
-		this.connectionState = new AtomicReference<>();
+		this.connectionState = new AtomicReference<>(ConnectionState.DISCONNECTED);
 		this.heartbeatNotifier.addListener(this);
-		connectToWebSocketClient();
 	}
 
-	private void connectToWebSocketClient() throws URISyntaxException {
+	private void connectToWebSocketClient() {
 		synchronized (connectionState) {
 			connectionState.set(ConnectionState.DISCONNECTED);
-			DdpWebSocketClient ddpWebSocketClient = new DdpWebSocketClient(this, serverIpAddress, serverPort, useSSL);
+			DdpWebSocketClient ddpWebSocketClient = new DdpWebSocketClient(this, getWebSocketURI());
 			DdpWebSocketClient priorDdpWebSocketClient = ddpWebSocketClientAtomicReference.getAndSet(ddpWebSocketClient);
 			if (priorDdpWebSocketClient != null) {
 				priorDdpWebSocketClient.close();
 			}
+		}
+	}
+
+	private URI getWebSocketURI() {
+		String httpScheme = meteorUri.getScheme();
+		String webSocketScheme = "ws";
+		if (httpScheme.equalsIgnoreCase("https")) {
+			webSocketScheme = "wss";
+		}
+		URIBuilder uriBuilder = new URIBuilder(meteorUri);
+		try {
+			return uriBuilder.setScheme(webSocketScheme).setPath(meteorUri.getPath() + "/websocket").build();
+		} catch (URISyntaxException e) {
+			// This means a significant error in user setup. Throw as runtime
+			throw new IllegalArgumentException("Bad Meteor URI. Cannot convert to WebSocket URI", e);
 		}
 	}
 
@@ -113,7 +126,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListen
 					connectToWebSocketClient();
 				}
 				ddpWebSocketClientAtomicReference.get().connect();
-			} catch (IOException | DeploymentException | URISyntaxException e) {
+			} catch (IOException | DeploymentException e) {
 				log.error("Unable to connect", e);
 				throw new UnableToConnectException(e);
 			}
