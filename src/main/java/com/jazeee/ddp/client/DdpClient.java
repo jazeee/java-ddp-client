@@ -87,7 +87,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListen
 		this.heartbeatNotifier.addListener(this);
 	}
 
-	private void connectToWebSocketClient() {
+	private void initializeWebSocketClient() {
 		synchronized (connectionState) {
 			connectionState.set(ConnectionState.DISCONNECTED);
 			DdpWebSocketClient ddpWebSocketClient = new DdpWebSocketClient(this, getWebSocketURI());
@@ -124,12 +124,12 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListen
 		synchronized (connectionState) {
 			try {
 				if (!connectionState.get().equals(ConnectionState.CONNECTED)) {
-					connectToWebSocketClient();
+					initializeWebSocketClient();
 				}
 				ddpWebSocketClientAtomicReference.get().connect();
 			} catch (IOException | DeploymentException e) {
 				log.error("Unable to connect", e);
-				throw new UnableToConnectException(e);
+				throw new UnableToConnectException(e, getWebSocketURI());
 			}
 		}
 	}
