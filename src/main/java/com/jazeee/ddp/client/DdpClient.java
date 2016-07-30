@@ -76,7 +76,7 @@ public class DdpClient implements IDdpHeartbeatListener, IDdpTopLevelErrorListen
 	 * Instantiates a Meteor DDP client for the Meteor server located at the supplied IP and port (note: running Meteor locally will typically have a port of 3000 but port 80 is
 	 * the typical default for publicly deployed servers)
 	 *
-	 * @param meteorUri Not Null Meteor URI: new URI("https://atosphericjs.com");
+	 * @param meteorUrl Not Null Meteor URL: new URL("https://atosphericjs.com");
 	 */
 	public DdpClient(@NotNull URL meteorUrl) {
 		super();
