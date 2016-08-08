@@ -1,6 +1,8 @@
 Meteor.js Java DDP Client
 =========================
 
+**NOTE**: This package is still in development. I am working on some ideas to make it more asynchronous, and adding some architectural elements. I'll likely add breaking changes, so be aware.
+
 Origins/Acknowledgements
 ------------------------
 This is a fork and significant rewrite out of [Key Yee's DDP Client](https://github.com/kenyee/java-ddp-client),
